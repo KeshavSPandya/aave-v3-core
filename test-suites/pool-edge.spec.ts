@@ -22,7 +22,7 @@ import {
   MockReserveInterestRateStrategy__factory,
   StableDebtToken__factory,
   VariableDebtToken__factory,
-  AToken__factory,
+  KToken__factory, // Changed AToken__factory to KToken__factory
   Pool__factory,
   ERC20__factory,
 } from '../types';
@@ -98,7 +98,7 @@ const setupPositions = async (testEnv: TestEnv, borrowingMode: RateMode) => {
 makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
   const {
     NO_MORE_RESERVES_ALLOWED,
-    CALLER_NOT_ATOKEN,
+    CALLER_NOT_KTOKEN, // Changed CALLER_NOT_ATOKEN to CALLER_NOT_KTOKEN
     NOT_CONTRACT,
     CALLER_NOT_POOL_CONFIGURATOR,
     RESERVE_ALREADY_INITIALIZED,
@@ -175,7 +175,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     );
 
     const amount = utils.parseUnits('10', 18);
-    const amountUSD = amount.div(BigNumber.from(10).pow(10));
+    const amountUSD = amount.div(BigNumber.from(10).pow(10)); // Assuming DAI price is 1 USD with 8 decimals
 
     await dai.connect(user0.signer)['mint(uint256)'](amount);
     await dai.connect(user0.signer).approve(mockPool.address, MAX_UINT_AMOUNT);
@@ -252,7 +252,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
         .connect(users[0].signer)
         .initReserve(
           dai.address,
-          config.aTokenAddress,
+          config.kTokenAddress, // Changed aTokenAddress to kTokenAddress
           config.stableDebtTokenAddress,
           config.variableDebtTokenAddress,
           ZERO_ADDRESS
@@ -337,14 +337,14 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     expect(await pool.connect(users[0].signer).mintToTreasury([dai.address]));
   });
 
-  it('Tries to call `finalizeTransfer()` by a non-aToken address (revert expected)', async () => {
+  it('Tries to call `finalizeTransfer()` by a non-kToken address (revert expected)', async () => { // Changed non-aToken to non-kToken
     const { pool, dai, users } = testEnv;
 
     await expect(
       pool
         .connect(users[0].signer)
         .finalizeTransfer(dai.address, users[0].address, users[1].address, 0, 0, 0)
-    ).to.be.revertedWith(CALLER_NOT_ATOKEN);
+    ).to.be.revertedWith(CALLER_NOT_KTOKEN); // Changed CALLER_NOT_ATOKEN to CALLER_NOT_KTOKEN
   });
 
   it('Tries to call `initReserve()` with an EOA as reserve (revert expected)', async () => {
@@ -415,7 +415,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     );
   });
 
-  it('Initialize an already initialized reserve. ReserveLogic `init` where aTokenAddress != ZERO_ADDRESS (revert expected)', async () => {
+  it('Initialize an already initialized reserve. ReserveLogic `init` where kTokenAddress != ZERO_ADDRESS (revert expected)', async () => { // Changed aTokenAddress to kTokenAddress
     const { pool, dai, deployer, configurator } = testEnv;
 
     // Impersonate PoolConfigurator
@@ -428,7 +428,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     await expect(
       pool.connect(configSigner).initReserve(
         dai.address,
-        config.aTokenAddress, // just need a non-used reserve token
+        config.kTokenAddress, // Changed aTokenAddress to kTokenAddress
         config.stableDebtTokenAddress,
         config.variableDebtTokenAddress,
         ZERO_ADDRESS
@@ -436,11 +436,11 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     ).to.be.revertedWith(RESERVE_ALREADY_INITIALIZED);
   });
 
-  it('Init reserve with ZERO_ADDRESS as aToken twice, to enter `_addReserveToList()` already added (revert expected)', async () => {
+  it('Init reserve with ZERO_ADDRESS as kToken twice, to enter `_addReserveToList()` already added (revert expected)', async () => { // Changed aToken to kToken
     /**
-     * To get into this case, we need to init a reserve with `aTokenAddress = address(0)` twice.
+     * To get into this case, we need to init a reserve with `kTokenAddress = address(0)` twice.
      * `_addReserveToList()` is called from `initReserve`. However, in `initReserve` we run `init` before the `_addReserveToList()`,
-     * and in `init` we are checking if `aTokenAddress == address(0)`, so to bypass that we need this odd init.
+     * and in `init` we are checking if `kTokenAddress == address(0)`, so to bypass that we need this odd init.
      */
     const { pool, dai, deployer, configurator } = testEnv;
 
@@ -457,7 +457,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       await pool
         .connect(configSigner)
         .initReserve(
-          config.aTokenAddress,
+          config.kTokenAddress, // Changed aTokenAddress to kTokenAddress
           ZERO_ADDRESS,
           config.stableDebtTokenAddress,
           config.variableDebtTokenAddress,
@@ -472,7 +472,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       pool
         .connect(configSigner)
         .initReserve(
-          config.aTokenAddress,
+          config.kTokenAddress, // Changed aTokenAddress to kTokenAddress
           ZERO_ADDRESS,
           config.stableDebtTokenAddress,
           config.variableDebtTokenAddress,
@@ -588,7 +588,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     const variableDebtTokenImplementation = await new VariableDebtToken__factory(
       await getFirstSigner()
     ).deploy(pool.address);
-    const aTokenImplementation = await new AToken__factory(await getFirstSigner()).deploy(
+    const kTokenImplementation = await new KToken__factory(await getFirstSigner()).deploy( // Changed aTokenImplementation, AToken__factory
       pool.address
     );
     const mockRateStrategy = await new MockReserveInterestRateStrategy__factory(
@@ -597,7 +597,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
 
     // Init the reserve
     const initInputParams: {
-      aTokenImpl: string;
+      kTokenImpl: string; // Changed aTokenImpl to kTokenImpl
       stableDebtTokenImpl: string;
       variableDebtTokenImpl: string;
       underlyingAssetDecimals: BigNumberish;
@@ -605,8 +605,8 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       underlyingAsset: string;
       treasury: string;
       incentivesController: string;
-      aTokenName: string;
-      aTokenSymbol: string;
+      kTokenName: string; // Changed aTokenName to kTokenName
+      kTokenSymbol: string; // Changed aTokenSymbol to kTokenSymbol
       variableDebtTokenName: string;
       variableDebtTokenSymbol: string;
       stableDebtTokenName: string;
@@ -614,7 +614,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       params: string;
     }[] = [
       {
-        aTokenImpl: aTokenImplementation.address,
+        kTokenImpl: kTokenImplementation.address, // Changed aTokenImpl to kTokenImpl
         stableDebtTokenImpl: stableDebtTokenImplementation.address,
         variableDebtTokenImpl: variableDebtTokenImplementation.address,
         underlyingAssetDecimals: 18,
@@ -622,8 +622,8 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
         underlyingAsset: mockToken.address,
         treasury: ZERO_ADDRESS,
         incentivesController: ZERO_ADDRESS,
-        aTokenName: 'AMOCK',
-        aTokenSymbol: 'AMOCK',
+        kTokenName: 'KMOCK', // Changed aTokenName to kTokenName (AMOCK to KMOCK)
+        kTokenSymbol: 'KMOCK', // Changed aTokenSymbol to kTokenSymbol (AMOCK to KMOCK)
         variableDebtTokenName: 'VMOCK',
         variableDebtTokenSymbol: 'VMOCK',
         stableDebtTokenName: 'SMOCK',
@@ -711,7 +711,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
         const reserveAsset = reservesListBefore[i];
         const assetData = await pool.getReserveData(reserveAsset);
 
-        if (assetData.aTokenAddress == ZERO_ADDRESS) {
+        if (assetData.kTokenAddress == ZERO_ADDRESS) { // Changed aTokenAddress to kTokenAddress
           continue;
         }
 
@@ -785,7 +785,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     ).to.be.revertedWith(DEBT_CEILING_NOT_ZERO);
   });
 
-  it('Tries to initialize a reserve with an AToken, StableDebtToken, and VariableDebt each deployed with the wrong pool address (revert expected)', async () => {
+  it('Tries to initialize a reserve with an KToken, StableDebtToken, and VariableDebt each deployed with the wrong pool address (revert expected)', async () => { // Changed AToken to KToken
     const { pool, deployer, configurator, addressesProvider } = testEnv;
 
     const NEW_POOL_IMPL_ARTIFACT = await hre.deployments.deploy('DummyPool', {
@@ -796,7 +796,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       log: false,
     });
 
-    const aTokenImp = await new AToken__factory(await getFirstSigner()).deploy(pool.address);
+    const kTokenImp = await new KToken__factory(await getFirstSigner()).deploy(pool.address); // Changed aTokenImp, AToken__factory
     const stableDebtTokenImp = await new StableDebtToken__factory(deployer.signer).deploy(
       pool.address
     );
@@ -804,7 +804,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       pool.address
     );
 
-    const aTokenWrongPool = await new AToken__factory(await getFirstSigner()).deploy(
+    const kTokenWrongPool = await new KToken__factory(await getFirstSigner()).deploy( // Changed aTokenWrongPool, AToken__factory
       NEW_POOL_IMPL_ARTIFACT.address
     );
     const stableDebtTokenWrongPool = await new StableDebtToken__factory(deployer.signer).deploy(
@@ -821,7 +821,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
 
     // Init the reserve
     const initInputParams: {
-      aTokenImpl: string;
+      kTokenImpl: string; // Changed aTokenImpl to kTokenImpl
       stableDebtTokenImpl: string;
       variableDebtTokenImpl: string;
       underlyingAssetDecimals: BigNumberish;
@@ -830,8 +830,8 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       treasury: string;
       incentivesController: string;
       underlyingAssetName: string;
-      aTokenName: string;
-      aTokenSymbol: string;
+      kTokenName: string; // Changed aTokenName to kTokenName
+      kTokenSymbol: string; // Changed aTokenSymbol to kTokenSymbol
       variableDebtTokenName: string;
       variableDebtTokenSymbol: string;
       stableDebtTokenName: string;
@@ -839,7 +839,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       params: string;
     }[] = [
       {
-        aTokenImpl: aTokenImp.address,
+        kTokenImpl: kTokenImp.address, // Changed aTokenImpl to kTokenImpl
         stableDebtTokenImpl: stableDebtTokenImp.address,
         variableDebtTokenImpl: variableDebtTokenImp.address,
         underlyingAssetDecimals: 18,
@@ -848,8 +848,8 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
         treasury: ZERO_ADDRESS,
         incentivesController: ZERO_ADDRESS,
         underlyingAssetName: 'MOCK',
-        aTokenName: 'AMOCK',
-        aTokenSymbol: 'AMOCK',
+        kTokenName: 'KMOCK', // Changed aTokenName to kTokenName (AMOCK to KMOCK)
+        kTokenSymbol: 'KMOCK', // Changed aTokenSymbol to kTokenSymbol (AMOCK to KMOCK)
         variableDebtTokenName: 'VMOCK',
         variableDebtTokenSymbol: 'VMOCK',
         stableDebtTokenName: 'SMOCK',
@@ -858,10 +858,10 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
       },
     ];
 
-    initInputParams[0].aTokenImpl = aTokenWrongPool.address;
+    initInputParams[0].kTokenImpl = kTokenWrongPool.address; // Changed aTokenImpl to kTokenImpl
     await expect(configurator.initReserves(initInputParams)).to.be.reverted;
 
-    initInputParams[0].aTokenImpl = aTokenImp.address;
+    initInputParams[0].kTokenImpl = kTokenImp.address; // Changed aTokenImpl to kTokenImpl
     initInputParams[0].stableDebtTokenImpl = stableDebtTokenWrongPool.address;
     await expect(configurator.initReserves(initInputParams)).to.be.reverted;
 
@@ -873,12 +873,12 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     expect(await configurator.initReserves(initInputParams));
   });
 
-  it('dropReserve(). Only allows to drop a reserve if both the aToken supply and accruedToTreasury are 0', async () => {
+  it('dropReserve(). Only allows to drop a reserve if both the kToken supply and accruedToTreasury are 0', async () => { // Changed aToken to kToken
     const {
       configurator,
       pool,
       weth,
-      aWETH,
+      kWETH, // Changed aWETH to kWETH
       deployer,
       users: [user0],
     } = testEnv;
@@ -919,7 +919,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     await pool.mintToTreasury([weth.address]);
 
     // Impersonate Collector
-    const collectorAddress = await aWETH.RESERVE_TREASURY_ADDRESS();
+    const collectorAddress = await kWETH.RESERVE_TREASURY_ADDRESS(); // Changed aWETH to kWETH
     await topUpNonPayableWithEther(user0.signer, [collectorAddress], utils.parseEther('1'));
     await impersonateAccountsHardhat([collectorAddress]);
     const collectorSigner = await hre.ethers.getSigner(collectorAddress);
@@ -928,7 +928,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     await configurator.dropReserve(weth.address);
   });
 
-  it('validateSupply(). Only allows to supply if amount + (scaled aToken supply + accruedToTreasury) <= supplyCap', async () => {
+  it('validateSupply(). Only allows to supply if amount + (scaled kToken supply + accruedToTreasury) <= supplyCap', async () => { // Changed aToken to kToken
     const {
       configurator,
       pool,
@@ -981,12 +981,12 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     await pool.deposit(weth.address, ethers.utils.parseEther('5'), userAddress, '0');
   });
 
-  it('_checkNoSuppliers() (PoolConfigurator). Properly disables actions if aToken supply == 0, but accruedToTreasury != 0', async () => {
+  it('_checkNoSuppliers() (PoolConfigurator). Properly disables actions if kToken supply == 0, but accruedToTreasury != 0', async () => { // Changed aToken to kToken
     const {
       configurator,
       pool,
       weth,
-      aWETH,
+      kWETH, // Changed aWETH to kWETH
       users: [user0],
       deployer,
     } = testEnv;
@@ -1029,7 +1029,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     await pool.mintToTreasury([weth.address]);
 
     // Impersonate Collector
-    const collectorAddress = await aWETH.RESERVE_TREASURY_ADDRESS();
+    const collectorAddress = await kWETH.RESERVE_TREASURY_ADDRESS(); // Changed aWETH to kWETH
     await topUpNonPayableWithEther(user0.signer, [collectorAddress], utils.parseEther('1'));
     await impersonateAccountsHardhat([collectorAddress]);
     const collectorSigner = await hre.ethers.getSigner(collectorAddress);
@@ -1042,7 +1042,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     const {
       configurator,
       pool,
-      aDai,
+      kDai, // Changed aDai to kDai
       dai,
       users: [depositor],
     } = testEnv;
@@ -1095,7 +1095,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     const {
       configurator,
       pool,
-      aDai,
+      kDai, // Changed aDai to kDai
       dai,
       users: [depositor],
     } = testEnv;
@@ -1177,7 +1177,7 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     // Set non-zero unbackedMintCap for DAI
     expect(await configurator.setUnbackedMintCap(dai.address, MAX_UNBACKED_MINT_CAP));
 
-    // Bridge mints 1M unbacked aDAI on behalf of User 1
+    // Bridge mints 1M unbacked kDAI on behalf of User 1 // Changed aDAI to kDAI
     expect(
       await pool.connect(bridge.signer).mintUnbacked(dai.address, daiAmount, user1.address, 0)
     );

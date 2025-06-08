@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 
 import {IERC20} from '../../../dependencies/openzeppelin/contracts/IERC20.sol';
 import {GPv2SafeERC20} from '../../../dependencies/gnosis/contracts/GPv2SafeERC20.sol';
-import {IAToken} from '../../../interfaces/IAToken.sol';
+import {IKToken} from '../../../interfaces/IKToken.sol';
 import {Errors} from '../helpers/Errors.sol';
 import {UserConfiguration} from '../configuration/UserConfiguration.sol';
 import {DataTypes} from '../types/DataTypes.sol';
@@ -64,9 +64,9 @@ library SupplyLogic {
 
     reserve.updateInterestRates(reserveCache, params.asset, params.amount, 0);
 
-    IERC20(params.asset).safeTransferFrom(msg.sender, reserveCache.aTokenAddress, params.amount);
+    IERC20(params.asset).safeTransferFrom(msg.sender, reserveCache.kTokenAddress, params.amount);
 
-    bool isFirstSupply = IAToken(reserveCache.aTokenAddress).mint(
+    bool isFirstSupply = IKToken(reserveCache.kTokenAddress).mint(
       msg.sender,
       params.onBehalfOf,
       params.amount,
@@ -80,7 +80,7 @@ library SupplyLogic {
           reservesList,
           userConfig,
           reserveCache.reserveConfiguration,
-          reserveCache.aTokenAddress
+          reserveCache.kTokenAddress
         )
       ) {
         userConfig.setUsingAsCollateral(reserve.id, true);
@@ -115,7 +115,7 @@ library SupplyLogic {
 
     reserve.updateState(reserveCache);
 
-    uint256 userBalance = IAToken(reserveCache.aTokenAddress).scaledBalanceOf(msg.sender).rayMul(
+    uint256 userBalance = IKToken(reserveCache.kTokenAddress).scaledBalanceOf(msg.sender).rayMul(
       reserveCache.nextLiquidityIndex
     );
 
@@ -136,7 +136,7 @@ library SupplyLogic {
       emit ReserveUsedAsCollateralDisabled(params.asset, msg.sender);
     }
 
-    IAToken(reserveCache.aTokenAddress).burn(
+    IKToken(reserveCache.kTokenAddress).burn(
       msg.sender,
       params.to,
       amountToWithdraw,
@@ -218,7 +218,7 @@ library SupplyLogic {
             reservesList,
             toConfig,
             reserve.configuration,
-            reserve.aTokenAddress
+            reserve.kTokenAddress
           )
         ) {
           toConfig.setUsingAsCollateral(reserveId, true);
@@ -258,7 +258,7 @@ library SupplyLogic {
     DataTypes.ReserveData storage reserve = reservesData[asset];
     DataTypes.ReserveCache memory reserveCache = reserve.cache();
 
-    uint256 userBalance = IERC20(reserveCache.aTokenAddress).balanceOf(msg.sender);
+    uint256 userBalance = IERC20(reserveCache.kTokenAddress).balanceOf(msg.sender);
 
     ValidationLogic.validateSetUseReserveAsCollateral(reserveCache, userBalance);
 

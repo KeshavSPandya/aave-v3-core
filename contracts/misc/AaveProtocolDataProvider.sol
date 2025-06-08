@@ -62,15 +62,15 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
   function getAllATokens() external view override returns (TokenData[] memory) {
     IPool pool = IPool(ADDRESSES_PROVIDER.getPool());
     address[] memory reserves = pool.getReservesList();
-    TokenData[] memory aTokens = new TokenData[](reserves.length);
+    TokenData[] memory kTokens = new TokenData[](reserves.length); // Renamed aTokens to kTokens
     for (uint256 i = 0; i < reserves.length; i++) {
       DataTypes.ReserveData memory reserveData = pool.getReserveData(reserves[i]);
-      aTokens[i] = TokenData({
-        symbol: IERC20Detailed(reserveData.aTokenAddress).symbol(),
-        tokenAddress: reserveData.aTokenAddress
+      kTokens[i] = TokenData({ // Renamed aTokens to kTokens
+        symbol: IERC20Detailed(reserveData.kTokenAddress).symbol(), // Renamed aTokenAddress to kTokenAddress
+        tokenAddress: reserveData.kTokenAddress // Renamed aTokenAddress to kTokenAddress
       });
     }
-    return aTokens;
+    return kTokens; // Renamed aTokens to kTokens
   }
 
   /// @inheritdoc IPoolDataProvider
@@ -158,7 +158,7 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
     returns (
       uint256 unbacked,
       uint256 accruedToTreasuryScaled,
-      uint256 totalAToken,
+      uint256 totalKToken, // Renamed totalAToken to totalKToken
       uint256 totalStableDebt,
       uint256 totalVariableDebt,
       uint256 liquidityRate,
@@ -177,7 +177,7 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
     return (
       reserve.unbacked,
       reserve.accruedToTreasury,
-      IERC20Detailed(reserve.aTokenAddress).totalSupply(),
+      IERC20Detailed(reserve.kTokenAddress).totalSupply(), // Renamed aTokenAddress to kTokenAddress
       IERC20Detailed(reserve.stableDebtTokenAddress).totalSupply(),
       IERC20Detailed(reserve.variableDebtTokenAddress).totalSupply(),
       reserve.currentLiquidityRate,
@@ -191,11 +191,11 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
   }
 
   /// @inheritdoc IPoolDataProvider
-  function getATokenTotalSupply(address asset) external view override returns (uint256) {
+  function getATokenTotalSupply(address asset) external view override returns (uint256) { // Function name can remain the same due to IPoolDataProvider interface
     DataTypes.ReserveData memory reserve = IPool(ADDRESSES_PROVIDER.getPool()).getReserveData(
       asset
     );
-    return IERC20Detailed(reserve.aTokenAddress).totalSupply();
+    return IERC20Detailed(reserve.kTokenAddress).totalSupply(); // Renamed aTokenAddress to kTokenAddress
   }
 
   /// @inheritdoc IPoolDataProvider
@@ -217,7 +217,7 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
     view
     override
     returns (
-      uint256 currentATokenBalance,
+      uint256 currentKTokenBalance, // Renamed currentATokenBalance to currentKTokenBalance
       uint256 currentStableDebt,
       uint256 currentVariableDebt,
       uint256 principalStableDebt,
@@ -235,7 +235,7 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
     DataTypes.UserConfigurationMap memory userConfig = IPool(ADDRESSES_PROVIDER.getPool())
       .getUserConfiguration(user);
 
-    currentATokenBalance = IERC20Detailed(reserve.aTokenAddress).balanceOf(user);
+    currentKTokenBalance = IERC20Detailed(reserve.kTokenAddress).balanceOf(user); // Renamed currentATokenBalance to currentKTokenBalance and aTokenAddress to kTokenAddress
     currentVariableDebt = IERC20Detailed(reserve.variableDebtTokenAddress).balanceOf(user);
     currentStableDebt = IERC20Detailed(reserve.stableDebtTokenAddress).balanceOf(user);
     principalStableDebt = IStableDebtToken(reserve.stableDebtTokenAddress).principalBalanceOf(user);
@@ -256,7 +256,7 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
     view
     override
     returns (
-      address aTokenAddress,
+      address kTokenAddress, // Renamed aTokenAddress to kTokenAddress
       address stableDebtTokenAddress,
       address variableDebtTokenAddress
     )
@@ -266,7 +266,7 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
     );
 
     return (
-      reserve.aTokenAddress,
+      reserve.kTokenAddress, // Renamed aTokenAddress to kTokenAddress
       reserve.stableDebtTokenAddress,
       reserve.variableDebtTokenAddress
     );

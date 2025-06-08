@@ -7,10 +7,11 @@ import { makeSuite, TestEnv } from './helpers/make-suite';
 import { getTestWallets } from './helpers/utils/wallets';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ProtocolErrors } from '../helpers/types';
+import { KToken } from '../types'; // Changed AToken to KToken
 
 declare var hre: HardhatRuntimeEnvironment;
 
-makeSuite('AToken: Permit', (testEnv: TestEnv) => {
+makeSuite('KToken: Permit', (testEnv: TestEnv) => { // Changed AToken to KToken
   let testWallets;
 
   const EIP712_REVISION = '1';
@@ -20,7 +21,7 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
 
     testWallets = getTestWallets();
 
-    // Mint DAI and deposit to Pool to for aDAI
+    // Mint DAI and deposit to Pool to for kDAI
     await waitForTx(await dai['mint(uint256)'](utils.parseEther('20000')));
     await waitForTx(await dai.approve(pool.address, utils.parseEther('20000')));
 
@@ -30,14 +31,14 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
   });
 
   it('Checks the domain separator', async () => {
-    const { aDai } = testEnv;
-    const separator = await aDai.DOMAIN_SEPARATOR();
+    const { kDai } = testEnv; // Changed aDai to kDai
+    const separator = await kDai.DOMAIN_SEPARATOR(); // Changed aDai to kDai
 
     const domain = {
-      name: await aDai.name(),
+      name: await kDai.name(), // Changed aDai to kDai
       version: EIP712_REVISION,
       chainId: hre.network.config.chainId,
-      verifyingContract: aDai.address,
+      verifyingContract: kDai.address, // Changed aDai to kDai
     };
     const domainSeparator = utils._TypedDataEncoder.hashDomain(domain);
 
@@ -45,19 +46,19 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
   });
 
   it('Tries to submit a permit with 0 expiration (revert expected)', async () => {
-    const { aDai, deployer, users } = testEnv;
+    const { kDai, deployer, users } = testEnv; // Changed aDai to kDai
     const owner = deployer;
     const spender = users[1];
 
-    const tokenName = await aDai.name();
+    const tokenName = await kDai.name(); // Changed aDai to kDai
 
     const chainId = hre.network.config.chainId || HARDHAT_CHAINID;
     const expiration = 0;
-    const nonce = (await aDai.nonces(owner.address)).toNumber();
+    const nonce = (await kDai.nonces(owner.address)).toNumber(); // Changed aDai to kDai
     const permitAmount = utils.parseEther('2').toString();
     const msgParams = buildPermitParams(
       chainId,
-      aDai.address,
+      kDai.address, // Changed aDai to kDai
       EIP712_REVISION,
       tokenName,
       owner.address,
@@ -69,7 +70,7 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
 
     const ownerPrivateKey = testWallets[0].secretKey;
 
-    expect((await aDai.allowance(owner.address, spender.address)).toString()).to.be.equal(
+    expect((await kDai.allowance(owner.address, spender.address)).toString()).to.be.equal( // Changed aDai to kDai
       '0',
       'INVALID_ALLOWANCE_BEFORE_PERMIT'
     );
@@ -77,31 +78,31 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
     const { v, r, s } = getSignatureFromTypedData(ownerPrivateKey, msgParams);
 
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(spender.signer)
         .permit(owner.address, spender.address, permitAmount, expiration, v, r, s)
     ).to.be.revertedWith(ProtocolErrors.INVALID_EXPIRATION);
 
-    expect((await aDai.allowance(owner.address, spender.address)).toString()).to.be.equal(
+    expect((await kDai.allowance(owner.address, spender.address)).toString()).to.be.equal( // Changed aDai to kDai
       '0',
       'INVALID_ALLOWANCE_AFTER_PERMIT'
     );
   });
 
   it('Submits a permit with maximum expiration length', async () => {
-    const { aDai, deployer, users } = testEnv;
+    const { kDai, deployer, users } = testEnv; // Changed aDai to kDai
     const owner = deployer;
     const spender = users[1];
 
     const chainId = hre.network.config.chainId || HARDHAT_CHAINID;
     const deadline = MAX_UINT_AMOUNT;
-    const nonce = (await aDai.nonces(owner.address)).toNumber();
+    const nonce = (await kDai.nonces(owner.address)).toNumber(); // Changed aDai to kDai
     const permitAmount = utils.parseEther('2').toString();
     const msgParams = buildPermitParams(
       chainId,
-      aDai.address,
+      kDai.address, // Changed aDai to kDai
       EIP712_REVISION,
-      await aDai.name(),
+      await kDai.name(), // Changed aDai to kDai
       owner.address,
       spender.address,
       nonce,
@@ -111,7 +112,7 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
 
     const ownerPrivateKey = testWallets[0].secretKey;
 
-    expect((await aDai.allowance(owner.address, spender.address)).toString()).to.be.equal(
+    expect((await kDai.allowance(owner.address, spender.address)).toString()).to.be.equal( // Changed aDai to kDai
       '0',
       'INVALID_ALLOWANCE_BEFORE_PERMIT'
     );
@@ -119,28 +120,28 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
     const { v, r, s } = getSignatureFromTypedData(ownerPrivateKey, msgParams);
 
     expect(
-      await aDai
+      await kDai // Changed aDai to kDai
         .connect(spender.signer)
         .permit(owner.address, spender.address, permitAmount, deadline, v, r, s)
     );
 
-    expect((await aDai.nonces(owner.address)).toNumber()).to.be.equal(1);
+    expect((await kDai.nonces(owner.address)).toNumber()).to.be.equal(1); // Changed aDai to kDai
   });
 
   it('Cancels the previous permit', async () => {
-    const { aDai, deployer, users } = testEnv;
+    const { kDai, deployer, users } = testEnv; // Changed aDai to kDai
     const owner = deployer;
     const spender = users[1];
 
     const chainId = hre.network.config.chainId || HARDHAT_CHAINID;
     const deadline = MAX_UINT_AMOUNT;
-    const nonce = (await aDai.nonces(owner.address)).toNumber();
+    const nonce = (await kDai.nonces(owner.address)).toNumber(); // Changed aDai to kDai
     const permitAmount = '0';
     const msgParams = buildPermitParams(
       chainId,
-      aDai.address,
+      kDai.address, // Changed aDai to kDai
       EIP712_REVISION,
-      await aDai.name(),
+      await kDai.name(), // Changed aDai to kDai
       owner.address,
       spender.address,
       nonce,
@@ -152,26 +153,26 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
 
     const { v, r, s } = getSignatureFromTypedData(ownerPrivateKey, msgParams);
 
-    expect((await aDai.allowance(owner.address, spender.address)).toString()).to.be.equal(
+    expect((await kDai.allowance(owner.address, spender.address)).toString()).to.be.equal( // Changed aDai to kDai
       ethers.utils.parseEther('2'),
       'INVALID_ALLOWANCE_BEFORE_PERMIT'
     );
 
     expect(
-      await aDai
+      await kDai // Changed aDai to kDai
         .connect(spender.signer)
         .permit(owner.address, spender.address, permitAmount, deadline, v, r, s)
     );
-    expect((await aDai.allowance(owner.address, spender.address)).toString()).to.be.equal(
+    expect((await kDai.allowance(owner.address, spender.address)).toString()).to.be.equal( // Changed aDai to kDai
       permitAmount,
       'INVALID_ALLOWANCE_AFTER_PERMIT'
     );
 
-    expect((await aDai.nonces(owner.address)).toNumber()).to.be.equal(2);
+    expect((await kDai.nonces(owner.address)).toNumber()).to.be.equal(2); // Changed aDai to kDai
   });
 
   it('Tries to submit a permit with invalid nonce (revert expected)', async () => {
-    const { aDai, deployer, users } = testEnv;
+    const { kDai, deployer, users } = testEnv; // Changed aDai to kDai
     const owner = deployer;
     const spender = users[1];
 
@@ -181,9 +182,9 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
     const permitAmount = '0';
     const msgParams = buildPermitParams(
       chainId,
-      aDai.address,
+      kDai.address, // Changed aDai to kDai
       EIP712_REVISION,
-      await aDai.name(),
+      await kDai.name(), // Changed aDai to kDai
       owner.address,
       spender.address,
       nonce,
@@ -196,26 +197,26 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
     const { v, r, s } = getSignatureFromTypedData(ownerPrivateKey, msgParams);
 
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(spender.signer)
         .permit(owner.address, spender.address, permitAmount, deadline, v, r, s)
     ).to.be.revertedWith(ProtocolErrors.INVALID_SIGNATURE);
   });
 
   it('Tries to submit a permit with invalid expiration (previous to the current block) (revert expected)', async () => {
-    const { aDai, deployer, users } = testEnv;
+    const { kDai, deployer, users } = testEnv; // Changed aDai to kDai
     const owner = deployer;
     const spender = users[1];
 
     const chainId = hre.network.config.chainId || HARDHAT_CHAINID;
     const expiration = '1';
-    const nonce = (await aDai.nonces(owner.address)).toNumber();
+    const nonce = (await kDai.nonces(owner.address)).toNumber(); // Changed aDai to kDai
     const permitAmount = '0';
     const msgParams = buildPermitParams(
       chainId,
-      aDai.address,
+      kDai.address, // Changed aDai to kDai
       EIP712_REVISION,
-      await aDai.name(),
+      await kDai.name(), // Changed aDai to kDai
       owner.address,
       spender.address,
       nonce,
@@ -228,26 +229,26 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
     const { v, r, s } = getSignatureFromTypedData(ownerPrivateKey, msgParams);
 
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(spender.signer)
         .permit(owner.address, spender.address, expiration, permitAmount, v, r, s)
     ).to.be.revertedWith(ProtocolErrors.INVALID_EXPIRATION);
   });
 
   it('Tries to submit a permit with invalid signature (revert expected)', async () => {
-    const { aDai, deployer, users } = testEnv;
+    const { kDai, deployer, users } = testEnv; // Changed aDai to kDai
     const owner = deployer;
     const spender = users[1];
 
     const chainId = hre.network.config.chainId || HARDHAT_CHAINID;
     const deadline = MAX_UINT_AMOUNT;
-    const nonce = (await aDai.nonces(owner.address)).toNumber();
+    const nonce = (await kDai.nonces(owner.address)).toNumber(); // Changed aDai to kDai
     const permitAmount = '0';
     const msgParams = buildPermitParams(
       chainId,
-      aDai.address,
+      kDai.address, // Changed aDai to kDai
       EIP712_REVISION,
-      await aDai.name(),
+      await kDai.name(), // Changed aDai to kDai
       owner.address,
       spender.address,
       nonce,
@@ -260,26 +261,26 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
     const { v, r, s } = getSignatureFromTypedData(ownerPrivateKey, msgParams);
 
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(spender.signer)
         .permit(owner.address, ZERO_ADDRESS, permitAmount, deadline, v, r, s)
     ).to.be.revertedWith(ProtocolErrors.INVALID_SIGNATURE);
   });
 
   it('Tries to submit a permit with invalid owner (revert expected)', async () => {
-    const { aDai, deployer, users } = testEnv;
+    const { kDai, deployer, users } = testEnv; // Changed aDai to kDai
     const owner = deployer;
     const spender = users[1];
 
     const chainId = hre.network.config.chainId || HARDHAT_CHAINID;
     const expiration = MAX_UINT_AMOUNT;
-    const nonce = (await aDai.nonces(owner.address)).toNumber();
+    const nonce = (await kDai.nonces(owner.address)).toNumber(); // Changed aDai to kDai
     const permitAmount = '0';
     const msgParams = buildPermitParams(
       chainId,
-      aDai.address,
+      kDai.address, // Changed aDai to kDai
       EIP712_REVISION,
-      await aDai.name(),
+      await kDai.name(), // Changed aDai to kDai
       owner.address,
       spender.address,
       nonce,
@@ -292,7 +293,7 @@ makeSuite('AToken: Permit', (testEnv: TestEnv) => {
     const { v, r, s } = getSignatureFromTypedData(ownerPrivateKey, msgParams);
 
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(spender.signer)
         .permit(ZERO_ADDRESS, spender.address, expiration, permitAmount, v, r, s)
     ).to.be.revertedWith(ProtocolErrors.ZERO_ADDRESS_NOT_VALID);

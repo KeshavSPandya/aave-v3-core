@@ -19,8 +19,8 @@ library DataTypes {
     uint40 lastUpdateTimestamp;
     //the id of the reserve. Represents the position in the list of the active reserves
     uint16 id;
-    //aToken address
-    address aTokenAddress;
+    //kToken address
+    address kTokenAddress;
     //stableDebtToken address
     address stableDebtTokenAddress;
     //variableDebtToken address
@@ -97,7 +97,7 @@ library DataTypes {
     uint256 currVariableBorrowRate;
     uint256 reserveFactor;
     ReserveConfigurationMap reserveConfiguration;
-    address aTokenAddress;
+    address kTokenAddress;
     address stableDebtTokenAddress;
     address variableDebtTokenAddress;
     uint40 reserveLastUpdateTimestamp;
@@ -110,7 +110,7 @@ library DataTypes {
     address collateralAsset;
     address debtAsset;
     address user;
-    bool receiveAToken;
+    bool receiveKToken;
     address priceOracle;
     uint8 userEModeCategory;
     address priceOracleSentinel;
@@ -143,7 +143,7 @@ library DataTypes {
     uint256 amount;
     InterestRateMode interestRateMode;
     address onBehalfOf;
-    bool useATokens;
+    bool useKTokens;
   }
 
   struct ExecuteWithdrawParams {
@@ -250,12 +250,12 @@ library DataTypes {
     uint256 averageStableBorrowRate;
     uint256 reserveFactor;
     address reserve;
-    address aToken;
+    address kToken;
   }
 
   struct InitReserveParams {
     address asset;
-    address aTokenAddress;
+    address kTokenAddress;
     address stableDebtAddress;
     address variableDebtAddress;
     address interestRateStrategyAddress;

@@ -1,5 +1,5 @@
-import { MockATokenRepayment } from './../types/mocks/tokens/MockATokenRepayment';
-import { MockATokenRepayment__factory } from './../types/factories/mocks/tokens/MockATokenRepayment__factory';
+import { MockKTokenRepayment } from './../types/mocks/tokens/MockKTokenRepayment'; // Renamed MockATokenRepayment
+import { MockKTokenRepayment__factory } from './../types/factories/mocks/tokens/MockKTokenRepayment__factory'; // Renamed MockATokenRepayment__factory
 import {
   waitForTx,
   evmSnapshot,
@@ -11,23 +11,24 @@ import {
 import { parseUnits } from '@ethersproject/units';
 import { expect } from 'chai';
 import { utils } from 'ethers';
-import { MAX_UINT_AMOUNT } from '../helpers/constants';
+import { MAX_UINT_AMOUNT, ZERO_ADDRESS } from '../helpers/constants'; // Added ZERO_ADDRESS import
 import { setBlocktime, timeLatest } from '../helpers/misc-utils';
 import { RateMode } from '../helpers/types';
 import { TestEnv, makeSuite } from './helpers/make-suite';
 import './helpers/utils/wadraymath';
 import { AaveDistributionManager__factory } from '@aave/deploy-v3/dist/types/typechain/factories/@aave/safety-module/contracts/stake';
+import { KToken } from '../types'; // Import KToken
 
-makeSuite('AToken: Repay', (testEnv: TestEnv) => {
+makeSuite('KToken: Repay with KTokens', (testEnv: TestEnv) => { // Changed AToken to KToken
   let snapShot: string;
-  let aTokenRepayImpl: MockATokenRepayment;
+  let kTokenRepayImpl: MockKTokenRepayment; // Renamed aTokenRepayImpl
 
   before('User 0 deposits 100 DAI, user 1 deposits 1 WETH, borrows 50 DAI', async () => {
     const {
       weth,
       pool,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [user0, user1],
       deployer,
       configurator,
@@ -43,15 +44,16 @@ makeSuite('AToken: Repay', (testEnv: TestEnv) => {
     await waitForTx(await dai.connect(user0.signer).approve(pool.address, MAX_UINT_AMOUNT));
     await waitForTx(await weth.connect(user1.signer).approve(pool.address, MAX_UINT_AMOUNT));
 
-    aTokenRepayImpl = await new MockATokenRepayment__factory(deployer.signer).deploy(pool.address);
+    kTokenRepayImpl = await new MockKTokenRepayment__factory(deployer.signer).deploy(pool.address); // Renamed aTokenRepayImpl
 
-    await configurator.updateAToken({
+    // Assuming updateAToken was changed to updateKToken in PoolConfigurator and ConfiguratorLogic
+    await configurator.updateKToken({ // Changed updateAToken to updateKToken
       asset: dai.address,
-      treasury: await aDai.RESERVE_TREASURY_ADDRESS(),
-      incentivesController: await aDai.getIncentivesController(),
-      name: await aDai.name(),
-      symbol: await aDai.symbol(),
-      implementation: aTokenRepayImpl.address,
+      treasury: await kDai.RESERVE_TREASURY_ADDRESS(), // Changed aDai to kDai
+      incentivesController: await kDai.getIncentivesController(), // Changed aDai to kDai
+      name: await kDai.name(), // Changed aDai to kDai
+      symbol: await kDai.symbol(), // Changed aDai to kDai
+      implementation: kTokenRepayImpl.address, // Renamed aTokenRepayImpl
       params: '0x',
     });
 
@@ -71,7 +73,7 @@ makeSuite('AToken: Repay', (testEnv: TestEnv) => {
     await evmRevert(snapShot);
   });
 
-  it('User 1 tries to repay using aTokens without actually holding aDAI', async () => {
+  it('User 1 tries to repay using kTokens without actually holding kDAI', async () => { // Changed aTokens to kTokens, aDAI to kDAI
     const {
       pool,
       dai,
@@ -79,61 +81,64 @@ makeSuite('AToken: Repay', (testEnv: TestEnv) => {
     } = testEnv;
     const repayAmount = utils.parseEther('25');
 
+    // Assuming repayWithATokens will be renamed or handle kTokens
     await expect(pool.connect(user1.signer).repayWithATokens(dai.address, repayAmount, 2)).to.be
       .reverted;
   });
 
-  it('User 1 receives 25 aDAI from user 0, repays half of the debt', async () => {
+  it('User 1 receives 25 kDAI from user 0, repays half of the debt', async () => { // Changed aDAI to kDAI
     const {
       pool,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       variableDebtDai,
       users: [user0, user1],
     } = testEnv;
 
     const repayAmount = utils.parseEther('25');
 
-    await expect(await aDai.connect(user0.signer).transfer(user1.address, repayAmount));
+    await expect(await kDai.connect(user0.signer).transfer(user1.address, repayAmount)); // Changed aDai to kDai
 
     const time = await timeLatest();
 
     await setBlocktime(time.add(1).toNumber());
 
-    const balanceBefore = await aDai.balanceOf(user1.address, { blockTag: 'pending' });
+    const balanceBefore = await kDai.balanceOf(user1.address, { blockTag: 'pending' }); // Changed aDai to kDai
     const debtBefore = await variableDebtDai.balanceOf(user1.address, { blockTag: 'pending' });
 
+    // Assuming repayWithATokens will be renamed or handle kTokens
     await expect(pool.connect(user1.signer).repayWithATokens(dai.address, repayAmount, 2))
       .to.emit(pool, 'Repay')
       .withArgs(dai.address, user1.address, user1.address, repayAmount, true)
-      .and.not.to.emit(aTokenRepayImpl.attach(aDai.address), 'MockRepayment');
-    const balanceAfter = await aDai.balanceOf(user1.address);
+      .and.not.to.emit(kTokenRepayImpl.attach(kDai.address), 'MockRepayment'); // Renamed aTokenRepayImpl, Changed aDai to kDai
+    const balanceAfter = await kDai.balanceOf(user1.address); // Changed aDai to kDai
     const debtAfter = await variableDebtDai.balanceOf(user1.address);
 
     expect(balanceAfter).to.be.closeTo(balanceBefore.sub(repayAmount), 2);
     expect(debtAfter).to.be.closeTo(debtBefore.sub(repayAmount), 2);
   });
 
-  it('User 1 receives 25 aDAI from user 0, use all aDai to repay debt', async () => {
+  it('User 1 receives 25 kDAI from user 0, use all kDai to repay debt', async () => { // Changed aDAI to kDAI, aDai to kDai
     const {
       pool,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       variableDebtDai,
       users: [user0, user1],
     } = testEnv;
 
     const transferAmount = utils.parseEther('25');
-    expect(await aDai.connect(user0.signer).transfer(user1.address, transferAmount));
+    expect(await kDai.connect(user0.signer).transfer(user1.address, transferAmount)); // Changed aDai to kDai
 
     const time = await timeLatest();
     await setBlocktime(time.add(1).toNumber());
 
-    const balanceBefore = await aDai.balanceOf(user1.address, { blockTag: 'pending' });
+    const balanceBefore = await kDai.balanceOf(user1.address, { blockTag: 'pending' }); // Changed aDai to kDai
     expect(balanceBefore).to.be.gt(transferAmount);
 
     const debtBefore = await variableDebtDai.balanceOf(user1.address, { blockTag: 'pending' });
 
+    // Assuming repayWithATokens will be renamed or handle kTokens
     const action = await pool
       .connect(user1.signer)
       .repayWithATokens(dai.address, MAX_UINT_AMOUNT, 2);
@@ -144,50 +149,51 @@ makeSuite('AToken: Repay', (testEnv: TestEnv) => {
       utils.toUtf8Bytes('Repay(address,address,address,uint256,bool)')
     );
 
-    await expect(action).to.not.emit(aTokenRepayImpl.attach(aDai.address), 'MockRepayment');
+    await expect(action).to.not.emit(kTokenRepayImpl.attach(kDai.address), 'MockRepayment'); // Renamed aTokenRepayImpl, Changed aDai to kDai
 
     const rawRepayEvents = tx.logs.filter((log) => log.topics[0] === repayEventSignature);
     const parsedRepayEvent = pool.interface.parseLog(rawRepayEvents[0]);
 
-    expect(parsedRepayEvent.args.useATokens).to.be.true;
+    expect(parsedRepayEvent.args.useATokens).to.be.true; // This flag indicates kToken usage now
     expect(parsedRepayEvent.args.reserve).to.be.eq(dai.address);
     expect(parsedRepayEvent.args.repayer).to.be.eq(user1.address);
     expect(parsedRepayEvent.args.user).to.be.eq(user1.address);
 
     const repayAmount = parsedRepayEvent.args.amount;
-    const balanceAfter = await aDai.balanceOf(user1.address);
+    const balanceAfter = await kDai.balanceOf(user1.address); // Changed aDai to kDai
     const debtAfter = await variableDebtDai.balanceOf(user1.address);
 
     expect(balanceAfter).to.be.eq(0);
     expect(debtAfter).to.be.closeTo(debtBefore.sub(repayAmount), 2);
   });
 
-  it('User 1 receives 55 aDAI from user 0, repay all debt', async () => {
+  it('User 1 receives 55 kDAI from user 0, repay all debt', async () => { // Changed aDAI to kDAI
     const {
       pool,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       variableDebtDai,
       users: [user0, user1],
     } = testEnv;
 
     const transferAmount = utils.parseEther('55');
-    expect(await aDai.connect(user0.signer).transfer(user1.address, transferAmount));
+    expect(await kDai.connect(user0.signer).transfer(user1.address, transferAmount)); // Changed aDai to kDai
 
     const time = await timeLatest();
     await setBlocktime(time.add(1).toNumber());
 
-    const balanceBefore = await aDai.balanceOf(user1.address, { blockTag: 'pending' });
+    const balanceBefore = await kDai.balanceOf(user1.address, { blockTag: 'pending' }); // Changed aDai to kDai
     const debtBefore = await variableDebtDai.balanceOf(user1.address, { blockTag: 'pending' });
     expect(debtBefore).to.be.gt(parseUnits('50', 18));
 
+    // Assuming repayWithATokens will be renamed or handle kTokens
     const action = await pool
       .connect(user1.signer)
       .repayWithATokens(dai.address, MAX_UINT_AMOUNT, 2);
 
     const tx = await waitForTx(action);
 
-    await expect(action).to.not.emit(aTokenRepayImpl.attach(aDai.address), 'MockRepayment');
+    await expect(action).to.not.emit(kTokenRepayImpl.attach(kDai.address), 'MockRepayment'); // Renamed aTokenRepayImpl, Changed aDai to kDai
 
     const repayEventSignature = utils.keccak256(
       utils.toUtf8Bytes('Repay(address,address,address,uint256,bool)')
@@ -196,24 +202,24 @@ makeSuite('AToken: Repay', (testEnv: TestEnv) => {
     const rawRepayEvents = tx.logs.filter((log) => log.topics[0] === repayEventSignature);
     const parsedRepayEvent = pool.interface.parseLog(rawRepayEvents[0]);
 
-    expect(parsedRepayEvent.args.useATokens).to.be.true;
+    expect(parsedRepayEvent.args.useATokens).to.be.true; // This flag indicates kToken usage now
     expect(parsedRepayEvent.args.reserve).to.be.eq(dai.address);
     expect(parsedRepayEvent.args.repayer).to.be.eq(user1.address);
     expect(parsedRepayEvent.args.user).to.be.eq(user1.address);
 
     const repayAmount = parsedRepayEvent.args.amount;
-    const balanceAfter = await aDai.balanceOf(user1.address);
+    const balanceAfter = await kDai.balanceOf(user1.address); // Changed aDai to kDai
     const debtAfter = await variableDebtDai.balanceOf(user1.address);
 
     expect(debtAfter).to.be.eq(0);
     expect(balanceAfter).to.be.eq(balanceBefore.sub(repayAmount));
   });
 
-  it('Check interest rates after repaying with aTokens', async () => {
+  it('Check interest rates after repaying with kTokens', async () => { // Changed aTokens to kTokens
     const {
       weth,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       pool,
       helpersContract,
       users: [user],
@@ -234,13 +240,14 @@ makeSuite('AToken: Repay', (testEnv: TestEnv) => {
       .connect(user.signer)
       .borrow(dai.address, borrowAmount, RateMode.Variable, 0, user.address);
 
-    // Now we repay 250 with aTokens
+    // Now we repay 250 with kTokens
     const repayAmount = parseUnits('250', 18);
+    // Assuming repayWithATokens will be renamed or handle kTokens
     const action = await pool
       .connect(user.signer)
       .repayWithATokens(dai.address, repayAmount, RateMode.Variable);
 
-    await expect(action).to.not.emit(aTokenRepayImpl.attach(aDai.address), 'MockRepayment');
+    await expect(action).to.not.emit(kTokenRepayImpl.attach(kDai.address), 'MockRepayment'); // Renamed aTokenRepayImpl, Changed aDai to kDai
 
     const reserveData = await pool.getReserveData(dai.address);
     const strategy = DefaultReserveInterestRateStrategy__factory.connect(
@@ -269,7 +276,7 @@ makeSuite('AToken: Repay', (testEnv: TestEnv) => {
       liquidityTaken: 0,
       totalStableDebt: stableDebtData[1],
       totalVariableDebt: variableDebt,
-      aToken: aDai.address,
+      aToken: kDai.address, // Changed aToken to kToken, and aDai to kDai
       reserve: dai.address,
       reserveFactor: (await helpersContract.getReserveConfigurationData(dai.address)).reserveFactor,
       averageStableBorrowRate: stableDebtData[2],

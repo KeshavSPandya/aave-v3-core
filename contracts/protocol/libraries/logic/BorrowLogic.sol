@@ -6,7 +6,7 @@ import {SafeCast} from '../../../dependencies/openzeppelin/contracts/SafeCast.so
 import {IERC20} from '../../../dependencies/openzeppelin/contracts/IERC20.sol';
 import {IStableDebtToken} from '../../../interfaces/IStableDebtToken.sol';
 import {IVariableDebtToken} from '../../../interfaces/IVariableDebtToken.sol';
-import {IAToken} from '../../../interfaces/IAToken.sol';
+import {IKToken} from '../../../interfaces/IKToken.sol';
 import {UserConfiguration} from '../configuration/UserConfiguration.sol';
 import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
 import {Helpers} from '../helpers/Helpers.sol';
@@ -150,7 +150,7 @@ library BorrowLogic {
     );
 
     if (params.releaseUnderlying) {
-      IAToken(reserveCache.aTokenAddress).transferUnderlyingTo(params.user, params.amount);
+      IKToken(reserveCache.kTokenAddress).transferUnderlyingTo(params.user, params.amount);
     }
 
     emit Borrow(
@@ -205,9 +205,9 @@ library BorrowLogic {
       ? stableDebt
       : variableDebt;
 
-    // Allows a user to repay with aTokens without leaving dust from interest.
-    if (params.useATokens && params.amount == type(uint256).max) {
-      params.amount = IAToken(reserveCache.aTokenAddress).balanceOf(msg.sender);
+    // Allows a user to repay with kTokens without leaving dust from interest.
+    if (params.useKTokens && params.amount == type(uint256).max) {
+      params.amount = IKToken(reserveCache.kTokenAddress).balanceOf(msg.sender);
     }
 
     if (params.amount < paybackAmount) {
@@ -227,7 +227,7 @@ library BorrowLogic {
     reserve.updateInterestRates(
       reserveCache,
       params.asset,
-      params.useATokens ? 0 : paybackAmount,
+      params.useKTokens ? 0 : paybackAmount,
       0
     );
 
@@ -243,23 +243,23 @@ library BorrowLogic {
       paybackAmount
     );
 
-    if (params.useATokens) {
-      IAToken(reserveCache.aTokenAddress).burn(
+    if (params.useKTokens) {
+      IKToken(reserveCache.kTokenAddress).burn(
         msg.sender,
-        reserveCache.aTokenAddress,
+        reserveCache.kTokenAddress,
         paybackAmount,
         reserveCache.nextLiquidityIndex
       );
     } else {
-      IERC20(params.asset).safeTransferFrom(msg.sender, reserveCache.aTokenAddress, paybackAmount);
-      IAToken(reserveCache.aTokenAddress).handleRepayment(
+      IERC20(params.asset).safeTransferFrom(msg.sender, reserveCache.kTokenAddress, paybackAmount);
+      IKToken(reserveCache.kTokenAddress).handleRepayment(
         msg.sender,
         params.onBehalfOf,
         paybackAmount
       );
     }
 
-    emit Repay(params.asset, params.onBehalfOf, msg.sender, paybackAmount, params.useATokens);
+    emit Repay(params.asset, params.onBehalfOf, msg.sender, paybackAmount, params.useKTokens);
 
     return paybackAmount;
   }

@@ -95,10 +95,10 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
   }
 
   /// @inheritdoc IPoolConfigurator
-  function updateAToken(
-    ConfiguratorInputTypes.UpdateATokenInput calldata input
+  function updateKToken( // Renamed updateAToken to updateKToken
+    ConfiguratorInputTypes.UpdateKTokenInput calldata input // Renamed UpdateATokenInput to UpdateKTokenInput
   ) external override onlyPoolAdmin {
-    ConfiguratorLogic.executeUpdateAToken(_pool, input);
+    ConfiguratorLogic.executeUpdateKToken(_pool, input); // Renamed executeUpdateAToken to executeUpdateKToken
   }
 
   /// @inheritdoc IPoolConfigurator
@@ -469,11 +469,13 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
   }
 
   function _checkNoSuppliers(address asset) internal view {
-    (, uint256 accruedToTreasury, uint256 totalATokens, , , , , , , , , ) = IPoolDataProvider(
+    // Assuming getReserveData() from IPoolDataProvider now returns totalKTokens as the third parameter due to previous changes.
+    // The exact index might need adjustment if the IPoolDataProvider interface return order for getReserveData changed differently.
+    (, uint256 accruedToTreasury, uint256 totalKTokens, , , , , , , , , ) = IPoolDataProvider( // Renamed totalATokens to totalKTokens
       _addressesProvider.getPoolDataProvider()
     ).getReserveData(asset);
 
-    require(totalATokens == 0 && accruedToTreasury == 0, Errors.RESERVE_LIQUIDITY_NOT_ZERO);
+    require(totalKTokens == 0 && accruedToTreasury == 0, Errors.RESERVE_LIQUIDITY_NOT_ZERO); // Renamed totalATokens to totalKTokens
   }
 
   function _checkNoBorrowers(address asset) internal view {
@@ -516,4 +518,10 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
       Errors.CALLER_NOT_RISK_OR_POOL_ADMIN
     );
   }
+
+  event KTokenUpgraded(address indexed asset, address indexed proxy, address indexed implementation); // Added new event
+  // ATokenUpgraded event is removed by not re-declaring it, effectively deleting it if it was here.
+  // If ATokenUpgraded was defined in IPoolConfigurator, this change would be a breaking interface change.
+  // However, events are usually emitted by the concrete contract.
+  // ConfiguratorLogic.sol already updated to emit KTokenUpgraded.
 }

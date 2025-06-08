@@ -1,4 +1,4 @@
-import { MockATokenRepayment } from './../types/mocks/tokens/MockATokenRepayment';
+import { MockKTokenRepayment } from './../types/mocks/tokens/MockKTokenRepayment'; // Renamed MockATokenRepayment
 import { waitForTx, increaseTime, ZERO_ADDRESS } from '@aave/deploy-v3';
 import { expect } from 'chai';
 import { BigNumber, utils } from 'ethers';
@@ -6,10 +6,10 @@ import { MAX_UINT_AMOUNT } from '../helpers/constants';
 import { convertToCurrencyDecimals } from '../helpers/contracts-helpers';
 import { RateMode } from '../helpers/types';
 import { makeSuite } from './helpers/make-suite';
-import { getATokenEvent, getVariableDebtTokenEvent } from './helpers/utils/tokenization-events';
-import { MockATokenRepayment__factory } from '../types';
+import { getKTokenEvent, getVariableDebtTokenEvent } from './helpers/utils/tokenization-events'; // Renamed getATokenEvent
+import { MockKTokenRepayment__factory } from '../types'; // Renamed MockATokenRepayment__factory
 
-makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
+makeSuite('KToken: Mint and Burn Event Accounting', (testEnv) => { // Renamed AToken to KToken
   let firstDaiDeposit;
   let secondDaiDeposit;
   let thirdDaiDeposit;
@@ -22,27 +22,27 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
   let accruedDebt1: BigNumber = BigNumber.from(0);
   let accruedDebt2: BigNumber = BigNumber.from(0);
   let accruedDebt3: BigNumber = BigNumber.from(0);
-  let aTokenRepayImpl: MockATokenRepayment;
+  let kTokenRepayImpl: MockKTokenRepayment; // Renamed aTokenRepayImpl
 
   const transferEventSignature = utils.keccak256(
     utils.toUtf8Bytes('Transfer(address,address,uint256)')
   );
 
   before('User 0 deposits 100 DAI, user 1 deposits 1 WETH, borrows 50 DAI', async () => {
-    const { dai, configurator, aDai, deployer, pool } = testEnv;
+    const { dai, configurator, kDai, deployer, pool } = testEnv; // Changed aDai to kDai
     firstDaiDeposit = await convertToCurrencyDecimals(dai.address, '10000');
     secondDaiDeposit = await convertToCurrencyDecimals(dai.address, '20000');
     thirdDaiDeposit = await convertToCurrencyDecimals(dai.address, '50000');
 
-    aTokenRepayImpl = await new MockATokenRepayment__factory(deployer.signer).deploy(pool.address);
+    kTokenRepayImpl = await new MockKTokenRepayment__factory(deployer.signer).deploy(pool.address); // Renamed aTokenRepayImpl
 
-    await configurator.updateAToken({
+    await configurator.updateKToken({ // Changed updateAToken to updateKToken
       asset: dai.address,
-      treasury: await aDai.RESERVE_TREASURY_ADDRESS(),
-      incentivesController: await aDai.getIncentivesController(),
-      name: await aDai.name(),
-      symbol: await aDai.symbol(),
-      implementation: aTokenRepayImpl.address,
+      treasury: await kDai.RESERVE_TREASURY_ADDRESS(), // Changed aDai to kDai
+      incentivesController: await kDai.getIncentivesController(), // Changed aDai to kDai
+      name: await kDai.name(), // Changed aDai to kDai
+      symbol: await kDai.symbol(), // Changed aDai to kDai
+      implementation: kTokenRepayImpl.address, // Renamed aTokenRepayImpl
       params: '0x',
     });
   });
@@ -50,7 +50,7 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
   it('User 1 supplies DAI', async () => {
     const {
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [depositor],
       pool,
       helpersContract,
@@ -73,7 +73,7 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
     await expect(
       pool.connect(depositor.signer).deposit(dai.address, firstDaiDeposit, depositor.address, '0')
     )
-      .to.emit(aDai, 'Mint')
+      .to.emit(kDai, 'Mint') // Changed aDai to kDai
       .withArgs(
         depositor.address,
         depositor.address,
@@ -82,14 +82,14 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
         daiReserveData.liquidityIndex
       );
 
-    const aDaiBalance = await aDai.balanceOf(depositor.address);
-    expect(aDaiBalance).to.be.equal(firstDaiDeposit);
+    const kDaiBalance = await kDai.balanceOf(depositor.address); // Changed aDai to kDai
+    expect(kDaiBalance).to.be.equal(firstDaiDeposit); // Changed aDaiBalance to kDaiBalance
   });
 
   it('User 1 supplies DAI on behalf of user 2', async () => {
     const {
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [depositor, receiver],
       pool,
       helpersContract,
@@ -112,7 +112,7 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
     await expect(
       pool.connect(depositor.signer).deposit(dai.address, firstDaiDeposit, receiver.address, '0')
     )
-      .to.emit(aDai, 'Mint')
+      .to.emit(kDai, 'Mint') // Changed aDai to kDai
       .withArgs(
         depositor.address,
         receiver.address,
@@ -121,8 +121,8 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
         daiReserveData.liquidityIndex
       );
 
-    const aDaiBalance = await aDai.balanceOf(receiver.address);
-    expect(aDaiBalance).to.be.equal(firstDaiDeposit);
+    const kDaiBalance = await kDai.balanceOf(receiver.address); // Changed aDai to kDai
+    expect(kDaiBalance).to.be.equal(firstDaiDeposit); // Changed aDaiBalance to kDaiBalance
   });
 
   it('User 2 supplies ETH,and borrows DAI', async () => {
@@ -170,7 +170,7 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
       borrower.address
     );
     const borrowerDaiData = await helpersContract.getUserReserveData(dai.address, borrower.address);
-    expect(borrowerWethData.currentATokenBalance).to.be.equal(amountETHtoDeposit);
+    expect(borrowerWethData.currentKTokenBalance).to.be.equal(amountETHtoDeposit); // Changed currentATokenBalance to currentKTokenBalance
     expect(borrowerDaiData.currentVariableDebt).to.be.equal(firstDaiBorrow);
   });
 
@@ -222,7 +222,7 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
   it('User 1 - supplies more DAI - confirm mint event includes accrued interest', async () => {
     const {
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [depositor],
       pool,
     } = testEnv;
@@ -243,8 +243,8 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
         .deposit(dai.address, secondDaiDeposit, depositor.address, '0')
     );
 
-    const aDaiBalance = await aDai.balanceOf(depositor.address);
-    accruedInterest1 = aDaiBalance.sub(firstDaiDeposit).sub(secondDaiDeposit);
+    const kDaiBalance = await kDai.balanceOf(depositor.address); // Changed aDai to kDai
+    accruedInterest1 = kDaiBalance.sub(firstDaiDeposit).sub(secondDaiDeposit); // Changed aDaiBalance to kDaiBalance
     const totalMinted = secondDaiDeposit.add(accruedInterest1);
 
     // get transfer event
@@ -252,10 +252,10 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
       (log) => log.topics[0] === transferEventSignature
     );
     expect(rawTransferEvents.length).to.equal(2, 'Incorrect number of Transfer Events');
-    const parsedTransferEvent = aDai.interface.parseLog(rawTransferEvents[1]);
+    const parsedTransferEvent = kDai.interface.parseLog(rawTransferEvents[1]); // Changed aDai to kDai
 
     // get mint event
-    const parsedMintEvents = getATokenEvent(aDai, depositTx, 'Mint');
+    const parsedMintEvents = getKTokenEvent(kDai, depositTx, 'Mint'); // Changed getATokenEvent to getKTokenEvent, aDai to kDai
     expect(parsedMintEvents.length).to.equal(1, 'Incorrect number of Mint Events');
     const parsedMintEvent = parsedMintEvents[0];
 
@@ -274,7 +274,7 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
   it('User 1 supplies more DAI again - confirm mint event includes accrued interest', async () => {
     const {
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [depositor],
       pool,
       helpersContract,
@@ -295,8 +295,8 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
       .deposit(dai.address, thirdDaiDeposit, depositor.address, '0');
     const depositReceipt = await depositTx.wait();
 
-    const aDaiBalance = await aDai.balanceOf(depositor.address);
-    accruedInterest2 = aDaiBalance
+    const kDaiBalance = await kDai.balanceOf(depositor.address); // Changed aDai to kDai
+    accruedInterest2 = kDaiBalance // Changed aDaiBalance to kDaiBalance
       .sub(firstDaiDeposit)
       .sub(secondDaiDeposit)
       .sub(thirdDaiDeposit)
@@ -309,10 +309,10 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
       (log) => log.topics[0] === transferEventSignature
     );
     expect(rawTransferEvents.length).to.equal(2, 'Incorrect number of Transfer Events');
-    const parsedTransferEvent = aDai.interface.parseLog(rawTransferEvents[1]);
+    const parsedTransferEvent = kDai.interface.parseLog(rawTransferEvents[1]); // Changed aDai to kDai
 
     // get mint event
-    const parsedMintEvents = getATokenEvent(aDai, depositReceipt, 'Mint');
+    const parsedMintEvents = getKTokenEvent(kDai, depositReceipt, 'Mint'); // Changed getATokenEvent to getKTokenEvent, aDai to kDai
     expect(parsedMintEvents.length).to.equal(1, 'Incorrect number of Mint Events');
     const parsedMintEvent = parsedMintEvents[0];
 
@@ -332,7 +332,7 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
   it('User 2 repays all remaining DAI', async () => {
     const {
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       variableDebtDai,
       users: [, borrower],
       pool,
@@ -395,14 +395,14 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
 
     // check handleRepayment function is correctly called
     await expect(repayTx)
-      .to.emit(aTokenRepayImpl.attach(aDai.address), 'MockRepayment')
+      .to.emit(kTokenRepayImpl.attach(kDai.address), 'MockRepayment') // Renamed aTokenRepayImpl, Changed aDai to kDai
       .withArgs(borrower.address, borrower.address, daiRepaid);
   });
 
   it('User 1 withdraws all deposited funds and interest', async () => {
     const {
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [depositor],
       pool,
       helpersContract,
@@ -414,8 +414,8 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
       .withdraw(dai.address, MAX_UINT_AMOUNT, depositor.address);
     const withdrawReceipt = await withdrawTx.wait();
 
-    const aDaiBalance = await aDai.balanceOf(depositor.address);
-    expect(aDaiBalance).to.be.equal(0);
+    const kDaiBalance = await kDai.balanceOf(depositor.address); // Changed aDai to kDai
+    expect(kDaiBalance).to.be.equal(0); // Changed aDaiBalance to kDaiBalance
 
     const daiBalanceAfter = await dai.balanceOf(depositor.address);
     const daiWithdrawn = daiBalanceAfter.sub(daiBalanceBefore);
@@ -433,10 +433,10 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
       (log) => log.topics[0] === transferEventSignature
     );
     expect(rawTransferEvents.length).to.equal(2, 'Incorrect number of Transfer Events');
-    const parsedTransferEvent = aDai.interface.parseLog(rawTransferEvents[0]);
+    const parsedTransferEvent = kDai.interface.parseLog(rawTransferEvents[0]); // Changed aDai to kDai
 
     // get burn event
-    const parsedBurnEvents = getATokenEvent(aDai, withdrawReceipt, 'Burn');
+    const parsedBurnEvents = getKTokenEvent(kDai, withdrawReceipt, 'Burn'); // Changed getATokenEvent to getKTokenEvent, aDai to kDai
     expect(parsedBurnEvents.length).to.equal(1, 'Incorrect number of Burn Events');
     const parsedBurnEvent = parsedBurnEvents[0];
 
@@ -522,7 +522,7 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
   it('User 1 withdraws amount less than accrued interest', async () => {
     const {
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [depositor],
       pool,
       helpersContract,
@@ -536,19 +536,19 @@ makeSuite('AToken: Mint and Burn Event Accounting', (testEnv) => {
       .withdraw(dai.address, smallWithdrawal, depositor.address);
     const withdrawReceipt = await withdrawTx.wait();
 
-    const aTokenSupplyAfter = await aDai.balanceOf(depositor.address);
+    const kTokenSupplyAfter = await kDai.balanceOf(depositor.address); // Changed aTokenSupplyAfter to kTokenSupplyAfter, aDai to kDai
     const daiReserveData = await helpersContract.getReserveData(dai.address);
-    const totalMinted = aTokenSupplyAfter.sub(firstDaiDeposit);
+    const totalMinted = kTokenSupplyAfter.sub(firstDaiDeposit); // Changed aTokenSupplyAfter to kTokenSupplyAfter
 
     // get transfer event
     const rawTransferEvents = withdrawReceipt.logs.filter(
       (log) => log.topics[0] === transferEventSignature
     );
     expect(rawTransferEvents.length).to.equal(2, 'Incorrect number of Transfer Events');
-    const parsedTransferEvent = aDai.interface.parseLog(rawTransferEvents[0]);
+    const parsedTransferEvent = kDai.interface.parseLog(rawTransferEvents[0]); // Changed aDai to kDai
 
     // get mint event
-    const parsedMintEvents = getATokenEvent(aDai, withdrawReceipt, 'Mint');
+    const parsedMintEvents = getKTokenEvent(kDai, withdrawReceipt, 'Mint'); // Changed getATokenEvent to getKTokenEvent, aDai to kDai
     expect(parsedMintEvents.length).to.equal(1, 'Incorrect number of Mint Events');
     const parsedMintEvent = parsedMintEvents[0];
 

@@ -4,7 +4,7 @@ import {
   getPool,
   getPoolAddressesProvider,
   getAaveProtocolDataProvider,
-  getAToken,
+  getKToken, // Assuming a getKToken helper will exist or getAToken will be updated/renamed
   getMintableERC20,
   getPoolConfiguratorProxy,
   getPoolAddressesProviderRegistry,
@@ -26,7 +26,7 @@ import {
 import { Pool } from '../../types/Pool';
 import { AaveProtocolDataProvider } from '../../types/AaveProtocolDataProvider';
 import { MintableERC20 } from '../../types/MintableERC20';
-import { AToken } from '../../types/AToken';
+import { KToken } from '../../types/KToken'; // Changed AToken to KToken
 import { PoolConfigurator } from '../../types/PoolConfigurator';
 import { PriceOracle } from '../../types/PriceOracle';
 import { PoolAddressesProvider } from '../../types/PoolAddressesProvider';
@@ -55,14 +55,14 @@ export interface TestEnv {
   aaveOracle: AaveOracle;
   helpersContract: AaveProtocolDataProvider;
   weth: WETH9Mocked;
-  aWETH: AToken;
+  kWETH: KToken; // Renamed aWETH to kWETH and AToken to KToken
   faucetMintable: Faucet;
   dai: MintableERC20;
-  aDai: AToken;
-  aAave: AToken;
+  kDai: KToken; // Renamed aDai to kDai and AToken to KToken
+  kAave: KToken; // Renamed aAave to kAave and AToken to KToken
   variableDebtDai: VariableDebtToken;
   stableDebtDai: StableDebtToken;
-  aUsdc: AToken;
+  kUsdc: KToken; // Renamed aUsdc to kUsdc and AToken to KToken
   usdc: MintableERC20;
   aave: MintableERC20;
   addressesProvider: PoolAddressesProvider;
@@ -87,15 +87,16 @@ const testEnv: TestEnv = {
   oracle: {} as PriceOracle,
   aaveOracle: {} as AaveOracle,
   weth: {} as WETH9Mocked,
-  aWETH: {} as AToken,
+  kWETH: {} as KToken, // Renamed aWETH to kWETH and AToken to KToken
   faucetMintable: {} as Faucet,
   dai: {} as MintableERC20,
-  aDai: {} as AToken,
+  kDai: {} as KToken, // Renamed aDai to kDai and AToken to KToken
   variableDebtDai: {} as VariableDebtToken,
   stableDebtDai: {} as StableDebtToken,
-  aUsdc: {} as AToken,
+  kUsdc: {} as KToken, // Renamed aUsdc to kUsdc and AToken to KToken
   usdc: {} as MintableERC20,
   aave: {} as MintableERC20,
+  // kAave will be initialized later if found
   addressesProvider: {} as PoolAddressesProvider,
   registry: {} as PoolAddressesProviderRegistry,
   aclManager: {} as ACLManager,
@@ -131,16 +132,18 @@ export async function initializeMakeSuite() {
 
   testEnv.helpersContract = await getAaveProtocolDataProvider();
 
-  const allTokens = await testEnv.helpersContract.getAllATokens();
-  const aDaiAddress = allTokens.find((aToken) => aToken.symbol.includes('DAI'))?.tokenAddress;
-  const aUsdcAddress = allTokens.find((aToken) => aToken.symbol.includes('USDC'))?.tokenAddress;
-  const aWEthAddress = allTokens.find((aToken) => aToken.symbol.includes('WETH'))?.tokenAddress;
-  const aAaveAddress = allTokens.find((aToken) => aToken.symbol.includes('AAVE'))?.tokenAddress;
+  // getAllATokens was updated to getAllKTokens in AaveProtocolDataProvider, assuming it returns KToken data now
+  const allTokens = await testEnv.helpersContract.getAllATokens(); // Function name on interface likely unchanged
+  const kDaiAddress = allTokens.find((kToken) => kToken.symbol.includes('DAI'))?.tokenAddress; // Renamed aDaiAddress to kDaiAddress, aToken to kToken
+  const kUsdcAddress = allTokens.find((kToken) => kToken.symbol.includes('USDC'))?.tokenAddress; // Renamed aUsdcAddress to kUsdcAddress, aToken to kToken
+  const kWEthAddress = allTokens.find((kToken) => kToken.symbol.includes('WETH'))?.tokenAddress; // Renamed aWEthAddress to kWEthAddress, aToken to kToken
+  const kAaveAddress = allTokens.find((kToken) => kToken.symbol.includes('AAVE'))?.tokenAddress; // Renamed aAaveAddress to kAaveAddress, aToken to kToken
 
   const reservesTokens = await testEnv.helpersContract.getAllReservesTokens();
 
   const daiAddress = reservesTokens.find((token) => token.symbol === 'DAI')?.tokenAddress;
   const {
+    kTokenAddress: kDaiActualAddress, // Assuming getReserveTokensAddresses now returns kTokenAddress
     variableDebtTokenAddress: variableDebtDaiAddress,
     stableDebtTokenAddress: stableDebtDaiAddress,
   } = await testEnv.helpersContract.getReserveTokensAddresses(daiAddress || '');
@@ -148,20 +151,23 @@ export async function initializeMakeSuite() {
   const aaveAddress = reservesTokens.find((token) => token.symbol === 'AAVE')?.tokenAddress;
   const wethAddress = reservesTokens.find((token) => token.symbol === 'WETH')?.tokenAddress;
 
-  if (!aDaiAddress || !aWEthAddress) {
-    throw 'Missing mandatory atokens';
+  if (!kDaiAddress || !kWEthAddress) { // Renamed aDaiAddress to kDaiAddress, aWEthAddress to kWEthAddress
+    throw 'Missing mandatory ktokens'; // Renamed atokens to ktokens
   }
   if (!daiAddress || !usdcAddress || !aaveAddress || !wethAddress) {
     throw 'Missing mandatory tokens';
   }
 
   testEnv.faucetMintable = await getFaucet();
-  testEnv.aDai = await getAToken(aDaiAddress);
+  testEnv.kDai = await getKToken(kDaiAddress); // Renamed aDai to kDai, getAToken to getKToken
   testEnv.variableDebtDai = await getVariableDebtToken(variableDebtDaiAddress);
   testEnv.stableDebtDai = await getStableDebtToken(stableDebtDaiAddress);
-  testEnv.aUsdc = await getAToken(aUsdcAddress);
-  testEnv.aWETH = await getAToken(aWEthAddress);
-  testEnv.aAave = await getAToken(aAaveAddress);
+  testEnv.kUsdc = await getKToken(kUsdcAddress); // Renamed aUsdc to kUsdc, getAToken to getKToken
+  testEnv.kWETH = await getKToken(kWEthAddress); // Renamed aWETH to kWETH, getAToken to getKToken
+  if (kAaveAddress) { // Handle optional AAVE kToken
+    testEnv.kAave = await getKToken(kAaveAddress); // Renamed aAave to kAave, getAToken to getKToken
+  }
+
 
   testEnv.dai = await getMintableERC20(daiAddress);
   testEnv.aave = await getMintableERC20(aaveAddress);

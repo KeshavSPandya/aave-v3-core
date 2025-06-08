@@ -2,7 +2,7 @@
 pragma solidity ^0.8.10;
 
 import {IPool} from '../../../interfaces/IPool.sol';
-import {IInitializableAToken} from '../../../interfaces/IInitializableAToken.sol';
+import {IInitializableKToken} from '../../../interfaces/IInitializableKToken.sol'; // Changed IInitializableAToken to IInitializableKToken
 import {IInitializableDebtToken} from '../../../interfaces/IInitializableDebtToken.sol';
 import {InitializableImmutableAdminUpgradeabilityProxy} from '../aave-upgradeability/InitializableImmutableAdminUpgradeabilityProxy.sol';
 import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
@@ -20,12 +20,12 @@ library ConfiguratorLogic {
   // See `IPoolConfigurator` for descriptions
   event ReserveInitialized(
     address indexed asset,
-    address indexed aToken,
+    address indexed kToken, // Renamed aToken to kToken
     address stableDebtToken,
     address variableDebtToken,
     address interestRateStrategyAddress
   );
-  event ATokenUpgraded(
+  event KTokenUpgraded( // Renamed ATokenUpgraded to KTokenUpgraded
     address indexed asset,
     address indexed proxy,
     address indexed implementation
@@ -51,17 +51,17 @@ library ConfiguratorLogic {
     IPool pool,
     ConfiguratorInputTypes.InitReserveInput calldata input
   ) public {
-    address aTokenProxyAddress = _initTokenWithProxy(
-      input.aTokenImpl,
+    address kTokenProxyAddress = _initTokenWithProxy( // Renamed aTokenProxyAddress to kTokenProxyAddress
+      input.kTokenImpl, // Renamed aTokenImpl to kTokenImpl
       abi.encodeWithSelector(
-        IInitializableAToken.initialize.selector,
+        IInitializableKToken.initialize.selector, // Changed IInitializableAToken to IInitializableKToken
         pool,
         input.treasury,
         input.underlyingAsset,
         input.incentivesController,
         input.underlyingAssetDecimals,
-        input.aTokenName,
-        input.aTokenSymbol,
+        input.kTokenName, // Renamed aTokenName to kTokenName
+        input.kTokenSymbol, // Renamed aTokenSymbol to kTokenSymbol
         input.params
       )
     );
@@ -96,7 +96,7 @@ library ConfiguratorLogic {
 
     pool.initReserve(
       input.underlyingAsset,
-      aTokenProxyAddress,
+      kTokenProxyAddress, // Renamed aTokenProxyAddress to kTokenProxyAddress
       stableDebtTokenProxyAddress,
       variableDebtTokenProxyAddress,
       input.interestRateStrategyAddress
@@ -114,7 +114,7 @@ library ConfiguratorLogic {
 
     emit ReserveInitialized(
       input.underlyingAsset,
-      aTokenProxyAddress,
+      kTokenProxyAddress, // Renamed aTokenProxyAddress to kTokenProxyAddress
       stableDebtTokenProxyAddress,
       variableDebtTokenProxyAddress,
       input.interestRateStrategyAddress
@@ -122,21 +122,21 @@ library ConfiguratorLogic {
   }
 
   /**
-   * @notice Updates the aToken implementation and initializes it
-   * @dev Emits the `ATokenUpgraded` event
-   * @param cachedPool The Pool containing the reserve with the aToken
+   * @notice Updates the kToken implementation and initializes it
+   * @dev Emits the `KTokenUpgraded` event
+   * @param cachedPool The Pool containing the reserve with the kToken
    * @param input The parameters needed for the initialize call
    */
-  function executeUpdateAToken(
+  function executeUpdateKToken( // Renamed executeUpdateAToken to executeUpdateKToken
     IPool cachedPool,
-    ConfiguratorInputTypes.UpdateATokenInput calldata input
+    ConfiguratorInputTypes.UpdateKTokenInput calldata input // Renamed UpdateATokenInput to UpdateKTokenInput
   ) public {
     DataTypes.ReserveData memory reserveData = cachedPool.getReserveData(input.asset);
 
     (, , , uint256 decimals, , ) = cachedPool.getConfiguration(input.asset).getParams();
 
     bytes memory encodedCall = abi.encodeWithSelector(
-      IInitializableAToken.initialize.selector,
+      IInitializableKToken.initialize.selector, // Changed IInitializableAToken to IInitializableKToken
       cachedPool,
       input.treasury,
       input.asset,
@@ -147,9 +147,9 @@ library ConfiguratorLogic {
       input.params
     );
 
-    _upgradeTokenImplementation(reserveData.aTokenAddress, input.implementation, encodedCall);
+    _upgradeTokenImplementation(reserveData.kTokenAddress, input.implementation, encodedCall); // Renamed aTokenAddress to kTokenAddress
 
-    emit ATokenUpgraded(input.asset, reserveData.aTokenAddress, input.implementation);
+    emit KTokenUpgraded(input.asset, reserveData.kTokenAddress, input.implementation); // Renamed ATokenUpgraded to KTokenUpgraded and aTokenAddress to kTokenAddress
   }
 
   /**

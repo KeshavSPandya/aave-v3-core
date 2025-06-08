@@ -1,18 +1,19 @@
-import { MockATokenRepayment__factory } from './../types/factories/mocks/tokens/MockATokenRepayment__factory';
+import { MockKTokenRepayment__factory } from './../types/factories/mocks/tokens/MockKTokenRepayment__factory'; // Renamed MockATokenRepayment__factory
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
-import { MAX_UINT_AMOUNT, oneEther } from '../helpers/constants';
+import { MAX_UINT_AMOUNT, oneEther, ZERO_ADDRESS } from '../helpers/constants';
 import { convertToCurrencyDecimals } from '../helpers/contracts-helpers';
 import { ProtocolErrors, RateMode } from '../helpers/types';
 import { calcExpectedVariableDebtTokenBalance } from './helpers/utils/calculations';
 import { getUserData, getReserveData } from './helpers/utils/helpers';
-import { makeSuite } from './helpers/make-suite';
+import { makeSuite, TestEnv } from './helpers/make-suite';
 import { waitForTx } from '@aave/deploy-v3';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { KToken } from '../types'; // Import KToken
 
 declare var hre: HardhatRuntimeEnvironment;
 
-makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
+makeSuite('Pool Liquidation: Liquidator receiving kToken', (testEnv) => { // Changed aToken to kToken
   const {
     HEALTH_FACTOR_NOT_BELOW_THRESHOLD,
     INVALID_HF,
@@ -23,23 +24,24 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
   let oracleBaseDecimals: number;
 
   before(async () => {
-    const { aaveOracle, addressesProvider, oracle, deployer, pool, configurator, aDai, dai } =
+    const { aaveOracle, addressesProvider, oracle, deployer, pool, configurator, kDai, dai } = // Changed aDai to kDai
       testEnv;
     oracleBaseDecimals = (await (await aaveOracle.BASE_CURRENCY_UNIT()).toString().length) - 1;
 
     await waitForTx(await addressesProvider.setPriceOracle(oracle.address));
 
-    const aTokenRepayImpl = await new MockATokenRepayment__factory(deployer.signer).deploy(
+    const kTokenRepayImpl = await new MockKTokenRepayment__factory(deployer.signer).deploy( // Renamed MockATokenRepayment__factory
       pool.address
     );
 
-    await configurator.updateAToken({
+    // Assuming updateAToken was changed to updateKToken
+    await configurator.updateKToken({ // Changed updateAToken to updateKToken
       asset: dai.address,
-      treasury: await aDai.RESERVE_TREASURY_ADDRESS(),
-      incentivesController: await aDai.getIncentivesController(),
-      name: await aDai.name(),
-      symbol: await aDai.symbol(),
-      implementation: aTokenRepayImpl.address,
+      treasury: await kDai.RESERVE_TREASURY_ADDRESS(), // Changed aDai to kDai
+      incentivesController: await kDai.getIncentivesController(), // Changed aDai to kDai
+      name: await kDai.name(), // Changed aDai to kDai
+      symbol: await kDai.symbol(), // Changed aDai to kDai
+      implementation: kTokenRepayImpl.address,
       params: '0x',
     });
   });
@@ -106,6 +108,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
     );
 
     //someone tries to liquidate user 2
+    // receiveKToken is true (formerly receiveAToken)
     await expect(
       pool.liquidationCall(weth.address, dai.address, borrower.address, 1, true)
     ).to.be.revertedWith(HEALTH_FACTOR_NOT_BELOW_THRESHOLD);
@@ -136,6 +139,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
       weth,
     } = testEnv;
     //user 2 tries to borrow
+    // receiveKToken is true
     await expect(
       pool.liquidationCall(weth.address, weth.address, borrower.address, oneEther, true)
     ).to.be.revertedWith(SPECIFIED_CURRENCY_NOT_BORROWED_BY_USER);
@@ -148,6 +152,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
       users: [, borrower],
     } = testEnv;
 
+    // receiveKToken is true
     await expect(
       pool.liquidationCall(dai.address, dai.address, borrower.address, oneEther, true)
     ).to.be.revertedWith(COLLATERAL_CANNOT_BE_LIQUIDATED);
@@ -157,7 +162,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
     const {
       pool,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       weth,
       users: [, borrower],
       oracle,
@@ -192,6 +197,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
     const amountToLiquidate = userReserveDataBefore.currentVariableDebt.div(2);
 
     // The supply is the same, but there should be a change in who has what. The liquidator should have received what the borrower lost.
+    // receiveKToken is true
     const tx = await pool.liquidationCall(
       weth.address,
       dai.address,
@@ -225,13 +231,13 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
 
     const expectedCollateralLiquidated = principalPrice
       .mul(amountToLiquidate)
-      .percentMul(10500)
+      .percentMul(10500) // Liquidation bonus
       .mul(BigNumber.from(10).pow(collateralDecimals))
       .div(collateralPrice.mul(BigNumber.from(10).pow(principalDecimals)));
 
     expect(expectedCollateralLiquidated).to.be.closeTo(
-      userWethReserveDataBefore.currentATokenBalance.sub(
-        userWethReserveDataAfter.currentATokenBalance
+      userWethReserveDataBefore.currentKTokenBalance.sub( // Changed currentATokenBalance to currentKTokenBalance
+        userWethReserveDataAfter.currentKTokenBalance // Changed currentATokenBalance to currentKTokenBalance
       ),
       2,
       'Invalid collateral amount liquidated'
@@ -303,8 +309,10 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
     ).to.be.true;
 
     // check handleRepayment function is correctly called
+    // Assuming MockATokenRepayment__factory was renamed to MockKTokenRepayment__factory
+    // and aDai to kDai
     await expect(tx)
-      .to.emit(MockATokenRepayment__factory.connect(aDai.address, borrower.signer), 'MockRepayment')
+      .to.emit(MockKTokenRepayment__factory.connect(kDai.address, borrower.signer), 'MockRepayment')
       .withArgs(deployer.address, borrower.address, amountToLiquidate);
   });
 
@@ -389,6 +397,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
 
     const amountToLiquidate = userReserveDataBefore.currentStableDebt.div(2);
 
+    // receiveKToken is true
     await pool.liquidationCall(
       weth.address,
       usdc.address,
@@ -422,13 +431,13 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
 
     const expectedCollateralLiquidated = principalPrice
       .mul(amountToLiquidate)
-      .percentMul(10500)
+      .percentMul(10500) // Liquidation bonus
       .mul(BigNumber.from(10).pow(collateralDecimals))
       .div(collateralPrice.mul(BigNumber.from(10).pow(principalDecimals)));
 
     expect(expectedCollateralLiquidated).to.be.eq(
-      userWethReserveDataBefore.currentATokenBalance.sub(
-        userWethReserveDataAfter.currentATokenBalance
+      userWethReserveDataBefore.currentKTokenBalance.sub( // Changed currentATokenBalance to currentKTokenBalance
+        userWethReserveDataAfter.currentKTokenBalance // Changed currentATokenBalance to currentKTokenBalance
       ),
       'Invalid collateral amount liquidated'
     );

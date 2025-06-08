@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 library ConfiguratorInputTypes {
   struct InitReserveInput {
-    address aTokenImpl;
+    address kTokenImpl; // Renamed aTokenImpl to kTokenImpl
     address stableDebtTokenImpl;
     address variableDebtTokenImpl;
     uint8 underlyingAssetDecimals;
@@ -11,8 +11,8 @@ library ConfiguratorInputTypes {
     address underlyingAsset;
     address treasury;
     address incentivesController;
-    string aTokenName;
-    string aTokenSymbol;
+    string kTokenName; // Renamed aTokenName to kTokenName
+    string kTokenSymbol; // Renamed aTokenSymbol to kTokenSymbol
     string variableDebtTokenName;
     string variableDebtTokenSymbol;
     string stableDebtTokenName;
@@ -20,13 +20,13 @@ library ConfiguratorInputTypes {
     bytes params;
   }
 
-  struct UpdateATokenInput {
+  struct UpdateKTokenInput { // Renamed UpdateATokenInput to UpdateKTokenInput
     address asset;
     address treasury;
     address incentivesController;
-    string name;
-    string symbol;
-    address implementation;
+    string name; // Assuming 'name' and 'symbol' are generic enough for KToken
+    string symbol; // Assuming 'name' and 'symbol' are generic enough for KToken
+    address implementation; // Assuming 'implementation' refers to the KToken implementation
     bytes params;
   }
 

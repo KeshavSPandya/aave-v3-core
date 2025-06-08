@@ -11,7 +11,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 declare var hre: HardhatRuntimeEnvironment;
 
-makeSuite('AToken: Edge cases', (testEnv: TestEnv) => {
+makeSuite('KToken: Edge cases', (testEnv: TestEnv) => {
   const {
     INVALID_MINT_AMOUNT,
     INVALID_BURN_AMOUNT,
@@ -20,14 +20,14 @@ makeSuite('AToken: Edge cases', (testEnv: TestEnv) => {
   } = ProtocolErrors;
 
   it('Check getters', async () => {
-    const { pool, users, dai, aDai } = testEnv;
+    const { pool, users, dai, kDai } = testEnv; // Changed aDai to kDai
 
-    expect(await aDai.decimals()).to.be.eq(await dai.decimals());
-    expect(await aDai.UNDERLYING_ASSET_ADDRESS()).to.be.eq(dai.address);
-    expect(await aDai.POOL()).to.be.eq(pool.address);
-    expect(await aDai.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS);
+    expect(await kDai.decimals()).to.be.eq(await dai.decimals()); // Changed aDai to kDai
+    expect(await kDai.UNDERLYING_ASSET_ADDRESS()).to.be.eq(dai.address); // Changed aDai to kDai
+    expect(await kDai.POOL()).to.be.eq(pool.address); // Changed aDai to kDai
+    expect(await kDai.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS); // Changed aDai to kDai
 
-    const scaledUserBalanceAndSupplyBefore = await aDai.getScaledUserBalanceAndSupply(
+    const scaledUserBalanceAndSupplyBefore = await kDai.getScaledUserBalanceAndSupply( // Changed aDai to kDai
       users[0].address
     );
     expect(scaledUserBalanceAndSupplyBefore[0]).to.be.eq(0);
@@ -56,69 +56,69 @@ makeSuite('AToken: Edge cases', (testEnv: TestEnv) => {
       users[0].address
     );
     expect(scaledUserBalanceAndSupplyAfter[0]).to.be.eq(
-      await convertToCurrencyDecimals(aDai.address, '1000')
+      await convertToCurrencyDecimals(kDai.address, '1000') // Changed aDai to kDai
     );
     expect(scaledUserBalanceAndSupplyAfter[1]).to.be.eq(
-      await convertToCurrencyDecimals(aDai.address, '1000')
+      await convertToCurrencyDecimals(kDai.address, '1000') // Changed aDai to kDai
     );
   });
 
   it('approve()', async () => {
-    const { users, aDai } = testEnv;
-    await aDai.connect(users[0].signer).approve(users[1].address, MAX_UINT_AMOUNT);
-    expect(await aDai.allowance(users[0].address, users[1].address)).to.be.eq(MAX_UINT_AMOUNT);
+    const { users, kDai } = testEnv; // Changed aDai to kDai
+    await kDai.connect(users[0].signer).approve(users[1].address, MAX_UINT_AMOUNT); // Changed aDai to kDai
+    expect(await kDai.allowance(users[0].address, users[1].address)).to.be.eq(MAX_UINT_AMOUNT); // Changed aDai to kDai
   });
 
   it('approve() with a ZERO_ADDRESS spender', async () => {
-    const { users, aDai } = testEnv;
-    await expect(aDai.connect(users[0].signer).approve(ZERO_ADDRESS, MAX_UINT_AMOUNT))
-      .to.emit(aDai, 'Approval')
+    const { users, kDai } = testEnv; // Changed aDai to kDai
+    await expect(kDai.connect(users[0].signer).approve(ZERO_ADDRESS, MAX_UINT_AMOUNT)) // Changed aDai to kDai
+      .to.emit(kDai, 'Approval') // Changed aDai to kDai
       .withArgs(users[0].address, ZERO_ADDRESS, MAX_UINT_AMOUNT);
   });
 
   it('transferFrom()', async () => {
-    const { users, aDai } = testEnv;
-    await aDai.connect(users[1].signer).transferFrom(users[0].address, users[1].address, 0);
+    const { users, kDai } = testEnv; // Changed aDai to kDai
+    await kDai.connect(users[1].signer).transferFrom(users[0].address, users[1].address, 0); // Changed aDai to kDai
   });
 
   it('increaseAllowance()', async () => {
-    const { users, aDai } = testEnv;
-    expect(await aDai.allowance(users[1].address, users[0].address)).to.be.eq(0);
-    await aDai
+    const { users, kDai } = testEnv; // Changed aDai to kDai
+    expect(await kDai.allowance(users[1].address, users[0].address)).to.be.eq(0); // Changed aDai to kDai
+    await kDai // Changed aDai to kDai
       .connect(users[1].signer)
-      .increaseAllowance(users[0].address, await convertToCurrencyDecimals(aDai.address, '1'));
-    expect(await aDai.allowance(users[1].address, users[0].address)).to.be.eq(
-      await convertToCurrencyDecimals(aDai.address, '1')
+      .increaseAllowance(users[0].address, await convertToCurrencyDecimals(kDai.address, '1')); // Changed aDai to kDai
+    expect(await kDai.allowance(users[1].address, users[0].address)).to.be.eq( // Changed aDai to kDai
+      await convertToCurrencyDecimals(kDai.address, '1') // Changed aDai to kDai
     );
   });
 
   it('decreaseAllowance()', async () => {
-    const { users, aDai } = testEnv;
-    expect(await aDai.allowance(users[1].address, users[0].address)).to.be.eq(
-      await convertToCurrencyDecimals(aDai.address, '1')
+    const { users, kDai } = testEnv; // Changed aDai to kDai
+    expect(await kDai.allowance(users[1].address, users[0].address)).to.be.eq( // Changed aDai to kDai
+      await convertToCurrencyDecimals(kDai.address, '1') // Changed aDai to kDai
     );
-    await aDai
+    await kDai // Changed aDai to kDai
       .connect(users[1].signer)
-      .decreaseAllowance(users[0].address, await convertToCurrencyDecimals(aDai.address, '1'));
-    expect(await aDai.allowance(users[1].address, users[0].address)).to.be.eq(0);
+      .decreaseAllowance(users[0].address, await convertToCurrencyDecimals(kDai.address, '1')); // Changed aDai to kDai
+    expect(await kDai.allowance(users[1].address, users[0].address)).to.be.eq(0); // Changed aDai to kDai
   });
 
   it('transfer() with a ZERO_ADDRESS recipient', async () => {
-    const { users, aDai } = testEnv;
-    await expect(aDai.connect(users[1].signer).transfer(ZERO_ADDRESS, 0))
-      .to.emit(aDai, 'Transfer')
+    const { users, kDai } = testEnv; // Changed aDai to kDai
+    await expect(kDai.connect(users[1].signer).transfer(ZERO_ADDRESS, 0)) // Changed aDai to kDai
+      .to.emit(kDai, 'Transfer') // Changed aDai to kDai
       .withArgs(users[1].address, ZERO_ADDRESS, 0);
   });
 
   it('transfer() with a ZERO_ADDRESS origin', async () => {
-    const { users, aDai } = testEnv;
-    await expect(aDai.connect(users[1].signer).transferFrom(ZERO_ADDRESS, users[1].address, 0))
-      .to.emit(aDai, 'Transfer')
+    const { users, kDai } = testEnv; // Changed aDai to kDai
+    await expect(kDai.connect(users[1].signer).transferFrom(ZERO_ADDRESS, users[1].address, 0)) // Changed aDai to kDai
+      .to.emit(kDai, 'Transfer') // Changed aDai to kDai
       .withArgs(ZERO_ADDRESS, users[1].address, 0);
   });
 
   it('mint() when amountScaled == 0 (revert expected)', async () => {
-    const { deployer, pool, aDai, users } = testEnv;
+    const { deployer, pool, kDai, users } = testEnv; // Changed aDai to kDai
 
     // Impersonate Pool
     await topUpNonPayableWithEther(deployer.signer, [pool.address], utils.parseEther('1'));
@@ -126,32 +126,32 @@ makeSuite('AToken: Edge cases', (testEnv: TestEnv) => {
     const poolSigner = await hre.ethers.getSigner(pool.address);
 
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(poolSigner)
         .mint(users[0].address, users[0].address, 0, utils.parseUnits('1', 27))
     ).to.be.revertedWith(INVALID_MINT_AMOUNT);
   });
 
   it('mint() to a ZERO_ADDRESS account', async () => {
-    const { deployer, pool, aDai } = testEnv;
+    const { deployer, pool, kDai } = testEnv; // Changed aDai to kDai
 
     // Impersonate Pool
     await topUpNonPayableWithEther(deployer.signer, [pool.address], utils.parseEther('1'));
     await impersonateAccountsHardhat([pool.address]);
     const poolSigner = await hre.ethers.getSigner(pool.address);
 
-    const mintingAmount = await convertToCurrencyDecimals(aDai.address, '100');
+    const mintingAmount = await convertToCurrencyDecimals(kDai.address, '100'); // Changed aDai to kDai
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(poolSigner)
         .mint(ZERO_ADDRESS, ZERO_ADDRESS, mintingAmount, utils.parseUnits('1', 27))
     )
-      .to.emit(aDai, 'Transfer')
+      .to.emit(kDai, 'Transfer') // Changed aDai to kDai
       .withArgs(ZERO_ADDRESS, ZERO_ADDRESS, mintingAmount);
   });
 
   it('burn() when amountScaled == 0 (revert expected)', async () => {
-    const { deployer, pool, aDai, users } = testEnv;
+    const { deployer, pool, kDai, users } = testEnv; // Changed aDai to kDai
 
     // Impersonate Pool
     await topUpNonPayableWithEther(deployer.signer, [pool.address], utils.parseEther('1'));
@@ -159,50 +159,50 @@ makeSuite('AToken: Edge cases', (testEnv: TestEnv) => {
     const poolSigner = await hre.ethers.getSigner(pool.address);
 
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(poolSigner)
         .burn(users[0].address, users[0].address, 0, utils.parseUnits('1', 27))
     ).to.be.revertedWith(INVALID_BURN_AMOUNT);
   });
 
   it('burn() of a ZERO_ADDRESS account (revert expected)', async () => {
-    const { deployer, pool, aDai, users } = testEnv;
+    const { deployer, pool, kDai, users } = testEnv; // Changed aDai to kDai
 
     // Impersonate Pool
     await topUpNonPayableWithEther(deployer.signer, [pool.address], utils.parseEther('1'));
     await impersonateAccountsHardhat([pool.address]);
     const poolSigner = await hre.ethers.getSigner(pool.address);
 
-    const burnAmount = await convertToCurrencyDecimals(aDai.address, '100');
+    const burnAmount = await convertToCurrencyDecimals(kDai.address, '100'); // Changed aDai to kDai
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(poolSigner)
         .burn(ZERO_ADDRESS, users[0].address, burnAmount, utils.parseUnits('1', 27))
     )
-      .to.emit(aDai, 'Transfer')
+      .to.emit(kDai, 'Transfer') // Changed aDai to kDai
       .withArgs(ZERO_ADDRESS, ZERO_ADDRESS, burnAmount);
   });
 
   it('mintToTreasury() with amount == 0', async () => {
-    const { deployer, pool, aDai } = testEnv;
+    const { deployer, pool, kDai } = testEnv; // Changed aDai to kDai
 
     // Impersonate Pool
     await topUpNonPayableWithEther(deployer.signer, [pool.address], utils.parseEther('1'));
     await impersonateAccountsHardhat([pool.address]);
     const poolSigner = await hre.ethers.getSigner(pool.address);
 
-    expect(await aDai.connect(poolSigner).mintToTreasury(0, utils.parseUnits('1', 27)));
+    expect(await kDai.connect(poolSigner).mintToTreasury(0, utils.parseUnits('1', 27))); // Changed aDai to kDai
   });
 
   it('setIncentivesController() ', async () => {
     const snapshot = await evmSnapshot();
-    const { deployer, poolAdmin, aWETH, aclManager } = testEnv;
+    const { deployer, poolAdmin, kWETH, aclManager } = testEnv; // Changed aWETH to kWETH
 
     expect(await aclManager.connect(deployer.signer).addPoolAdmin(poolAdmin.address));
 
-    expect(await aWETH.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS);
-    expect(await aWETH.connect(poolAdmin.signer).setIncentivesController(ZERO_ADDRESS));
-    expect(await aWETH.getIncentivesController()).to.be.eq(ZERO_ADDRESS);
+    expect(await kWETH.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS); // Changed aWETH to kWETH
+    expect(await kWETH.connect(poolAdmin.signer).setIncentivesController(ZERO_ADDRESS)); // Changed aWETH to kWETH
+    expect(await kWETH.getIncentivesController()).to.be.eq(ZERO_ADDRESS); // Changed aWETH to kWETH
 
     await evmRevert(snapshot);
   });
@@ -210,36 +210,36 @@ makeSuite('AToken: Edge cases', (testEnv: TestEnv) => {
   it('setIncentivesController() from not pool admin (revert expected)', async () => {
     const {
       users: [user],
-      aWETH,
+      kWETH, // Changed aWETH to kWETH
     } = testEnv;
 
-    expect(await aWETH.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS);
+    expect(await kWETH.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS); // Changed aWETH to kWETH
 
     await expect(
-      aWETH.connect(user.signer).setIncentivesController(ZERO_ADDRESS)
+      kWETH.connect(user.signer).setIncentivesController(ZERO_ADDRESS) // Changed aWETH to kWETH
     ).to.be.revertedWith(CALLER_NOT_POOL_ADMIN);
   });
 
   it('transfer() amount > MAX_UINT_128', async () => {
     const {
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [depositor, borrower],
     } = testEnv;
 
-    expect(aDai.transfer(borrower.address, MAX_UINT_AMOUNT)).to.be.revertedWith(
+    expect(kDai.transfer(borrower.address, MAX_UINT_AMOUNT)).to.be.revertedWith( // Changed aDai to kDai
       SAFECAST_UINT128_OVERFLOW
     );
   });
 
   it('setIncentivesController() ', async () => {
     const snapshot = await evmSnapshot();
-    const { deployer, poolAdmin, aWETH, aclManager } = testEnv;
+    const { deployer, poolAdmin, kWETH, aclManager } = testEnv; // Changed aWETH to kWETH
 
     expect(await aclManager.connect(deployer.signer).addPoolAdmin(poolAdmin.address));
 
-    expect(await aWETH.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS);
-    expect(await aWETH.connect(poolAdmin.signer).setIncentivesController(ZERO_ADDRESS));
-    expect(await aWETH.getIncentivesController()).to.be.eq(ZERO_ADDRESS);
+    expect(await kWETH.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS); // Changed aWETH to kWETH
+    expect(await kWETH.connect(poolAdmin.signer).setIncentivesController(ZERO_ADDRESS)); // Changed aWETH to kWETH
+    expect(await kWETH.getIncentivesController()).to.be.eq(ZERO_ADDRESS); // Changed aWETH to kWETH
 
     await evmRevert(snapshot);
   });
@@ -247,13 +247,13 @@ makeSuite('AToken: Edge cases', (testEnv: TestEnv) => {
   it('setIncentivesController() from not pool admin (revert expected)', async () => {
     const {
       users: [user],
-      aWETH,
+      kWETH, // Changed aWETH to kWETH
     } = testEnv;
 
-    expect(await aWETH.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS);
+    expect(await kWETH.getIncentivesController()).to.not.be.eq(ZERO_ADDRESS); // Changed aWETH to kWETH
 
     await expect(
-      aWETH.connect(user.signer).setIncentivesController(ZERO_ADDRESS)
+      kWETH.connect(user.signer).setIncentivesController(ZERO_ADDRESS) // Changed aWETH to kWETH
     ).to.be.revertedWith(CALLER_NOT_POOL_ADMIN);
   });
 });

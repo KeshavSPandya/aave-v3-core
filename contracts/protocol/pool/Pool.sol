@@ -317,7 +317,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
           amount: amount,
           interestRateMode: DataTypes.InterestRateMode(interestRateMode),
           onBehalfOf: msg.sender,
-          useATokens: true
+          useKTokens: true // Changed from useATokens to useKTokens
         })
       );
   }
@@ -361,7 +361,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     address debtAsset,
     address user,
     uint256 debtToCover,
-    bool receiveAToken
+    bool receiveKToken // Changed from receiveAToken to receiveKToken
   ) public virtual override {
     LiquidationLogic.executeLiquidationCall(
       _reserves,
@@ -374,7 +374,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
         collateralAsset: collateralAsset,
         debtAsset: debtAsset,
         user: user,
-        receiveAToken: receiveAToken,
+        receiveKToken: receiveKToken, // Changed from receiveAToken to receiveKToken
         priceOracle: ADDRESSES_PROVIDER.getPriceOracle(),
         userEModeCategory: _usersEModeCategory[user],
         priceOracleSentinel: ADDRESSES_PROVIDER.getPriceOracleSentinel()
@@ -572,7 +572,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint256 balanceFromBefore,
     uint256 balanceToBefore
   ) external virtual override {
-    require(msg.sender == _reserves[asset].aTokenAddress, Errors.CALLER_NOT_ATOKEN);
+    require(msg.sender == _reserves[asset].kTokenAddress, Errors.CALLER_NOT_KTOKEN); // Changed aTokenAddress to kTokenAddress and CALLER_NOT_ATOKEN to CALLER_NOT_KTOKEN
     SupplyLogic.executeFinalizeTransfer(
       _reserves,
       _reservesList,
@@ -595,7 +595,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
   /// @inheritdoc IPool
   function initReserve(
     address asset,
-    address aTokenAddress,
+    address kTokenAddress, // Changed aTokenAddress to kTokenAddress
     address stableDebtAddress,
     address variableDebtAddress,
     address interestRateStrategyAddress
@@ -606,7 +606,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
         _reservesList,
         DataTypes.InitReserveParams({
           asset: asset,
-          aTokenAddress: aTokenAddress,
+          kTokenAddress: kTokenAddress, // Changed aTokenAddress to kTokenAddress
           stableDebtAddress: stableDebtAddress,
           variableDebtAddress: variableDebtAddress,
           interestRateStrategyAddress: interestRateStrategyAddress,

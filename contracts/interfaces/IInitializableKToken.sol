@@ -5,20 +5,20 @@ import {IAaveIncentivesController} from './IAaveIncentivesController.sol';
 import {IPool} from './IPool.sol';
 
 /**
- * @title IInitializableAToken
+ * @title IInitializableKToken
  * @author Aave
- * @notice Interface for the initialize function on AToken
+ * @notice Interface for the initialize function on KToken
  */
-interface IInitializableAToken {
+interface IInitializableKToken {
   /**
-   * @dev Emitted when an aToken is initialized
+   * @dev Emitted when an kToken is initialized
    * @param underlyingAsset The address of the underlying asset
    * @param pool The address of the associated pool
    * @param treasury The address of the treasury
-   * @param incentivesController The address of the incentives controller for this aToken
-   * @param aTokenDecimals The decimals of the underlying
-   * @param aTokenName The name of the aToken
-   * @param aTokenSymbol The symbol of the aToken
+   * @param incentivesController The address of the incentives controller for this kToken
+   * @param kTokenDecimals The decimals of the underlying
+   * @param kTokenName The name of the kToken
+   * @param kTokenSymbol The symbol of the kToken
    * @param params A set of encoded parameters for additional initialization
    */
   event Initialized(
@@ -26,21 +26,21 @@ interface IInitializableAToken {
     address indexed pool,
     address treasury,
     address incentivesController,
-    uint8 aTokenDecimals,
-    string aTokenName,
-    string aTokenSymbol,
+    uint8 kTokenDecimals,
+    string kTokenName,
+    string kTokenSymbol,
     bytes params
   );
 
   /**
-   * @notice Initializes the aToken
+   * @notice Initializes the kToken
    * @param pool The pool contract that is initializing this contract
-   * @param treasury The address of the Aave treasury, receiving the fees on this aToken
-   * @param underlyingAsset The address of the underlying asset of this aToken (E.g. WETH for aWETH)
+   * @param treasury The address of the Aave treasury, receiving the fees on this kToken
+   * @param underlyingAsset The address of the underlying asset of this kToken (E.g. WETH for aWETH)
    * @param incentivesController The smart contract managing potential incentives distribution
-   * @param aTokenDecimals The decimals of the aToken, same as the underlying asset's
-   * @param aTokenName The name of the aToken
-   * @param aTokenSymbol The symbol of the aToken
+   * @param kTokenDecimals The decimals of the kToken, same as the underlying asset's
+   * @param kTokenName The name of the kToken
+   * @param kTokenSymbol The symbol of the kToken
    * @param params A set of encoded parameters for additional initialization
    */
   function initialize(
@@ -48,9 +48,9 @@ interface IInitializableAToken {
     address treasury,
     address underlyingAsset,
     IAaveIncentivesController incentivesController,
-    uint8 aTokenDecimals,
-    string calldata aTokenName,
-    string calldata aTokenSymbol,
+    uint8 kTokenDecimals,
+    string calldata kTokenName,
+    string calldata kTokenSymbol,
     bytes calldata params
   ) external;
 }

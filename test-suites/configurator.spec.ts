@@ -6,7 +6,7 @@ import { MAX_UINT_AMOUNT, ONE_ADDRESS, RAY, ZERO_ADDRESS } from '../helpers/cons
 import { ProtocolErrors } from '../helpers/types';
 import {
   AaveProtocolDataProvider,
-  AToken__factory,
+  KToken__factory, // Changed AToken__factory to KToken__factory
   MintableERC20__factory,
   MockReserveInterestRateStrategy__factory,
   StableDebtToken__factory,
@@ -140,7 +140,7 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
     const variableDebtTokenImplementation = await new VariableDebtToken__factory(
       await getFirstSigner()
     ).deploy(pool.address);
-    const aTokenImplementation = await new AToken__factory(await getFirstSigner()).deploy(
+    const kTokenImplementation = await new KToken__factory(await getFirstSigner()).deploy( // Changed aTokenImplementation to kTokenImplementation, AToken__factory to KToken__factory
       pool.address
     );
     const mockRateStrategy = await new MockReserveInterestRateStrategy__factory(
@@ -149,7 +149,7 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
 
     // Init the reserve
     const initInputParams: {
-      aTokenImpl: string;
+      kTokenImpl: string; // Changed aTokenImpl to kTokenImpl
       stableDebtTokenImpl: string;
       variableDebtTokenImpl: string;
       underlyingAssetDecimals: BigNumberish;
@@ -157,8 +157,8 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
       underlyingAsset: string;
       treasury: string;
       incentivesController: string;
-      aTokenName: string;
-      aTokenSymbol: string;
+      kTokenName: string; // Changed aTokenName to kTokenName
+      kTokenSymbol: string; // Changed aTokenSymbol to kTokenSymbol
       variableDebtTokenName: string;
       variableDebtTokenSymbol: string;
       stableDebtTokenName: string;
@@ -166,7 +166,7 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
       params: string;
     }[] = [
       {
-        aTokenImpl: aTokenImplementation.address,
+        kTokenImpl: kTokenImplementation.address, // Changed aTokenImpl to kTokenImpl
         stableDebtTokenImpl: stableDebtTokenImplementation.address,
         variableDebtTokenImpl: variableDebtTokenImplementation.address,
         underlyingAssetDecimals: 18,
@@ -174,8 +174,8 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
         underlyingAsset: mockToken.address,
         treasury: ZERO_ADDRESS,
         incentivesController: ZERO_ADDRESS,
-        aTokenName: 'AMOCK',
-        aTokenSymbol: 'AMOCK',
+        kTokenName: 'KMOCK', // Changed aTokenName to kTokenName (AMOCK to KMOCK)
+        kTokenSymbol: 'KMOCK', // Changed aTokenSymbol to kTokenSymbol (AMOCK to KMOCK)
         variableDebtTokenName: 'VMOCK',
         variableDebtTokenSymbol: 'VMOCK',
         stableDebtTokenName: 'SMOCK',
@@ -637,7 +637,7 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
 
     const { supplyCap: oldWethSupplyCap } = await helpersContract.getReserveCaps(weth.address);
 
-    const newBorrowCap = '3000000';
+    const newBorrowCap = '3000000'; // This should be the current borrowCap if not changed in this test
     const newSupplyCap = '3000000';
     expect(await configurator.setSupplyCap(weth.address, newSupplyCap))
       .to.emit(configurator, 'SupplyCapChanged')
@@ -645,7 +645,7 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
 
     await expectReserveConfigurationData(helpersContract, weth.address, {
       ...baseConfigValues,
-      borrowCap: newBorrowCap,
+      borrowCap: newBorrowCap, // Assuming borrowCap was set in a previous test or matches base
       supplyCap: newSupplyCap,
     });
   });
@@ -655,7 +655,7 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
 
     const { supplyCap: oldWethSupplyCap } = await helpersContract.getReserveCaps(weth.address);
 
-    const newBorrowCap = '3000000';
+    const newBorrowCap = '3000000'; // This should be the current borrowCap if not changed in this test
     const newSupplyCap = '3000000';
     expect(await configurator.connect(riskAdmin.signer).setSupplyCap(weth.address, newSupplyCap))
       .to.emit(configurator, 'SupplyCapChanged')
@@ -663,9 +663,40 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
 
     await expectReserveConfigurationData(helpersContract, weth.address, {
       ...baseConfigValues,
-      borrowCap: newBorrowCap,
+      borrowCap: newBorrowCap, // Assuming borrowCap was set in a previous test or matches base
       supplyCap: newSupplyCap,
     });
+  });
+
+  it('Updates the liquidation protocol fee of WETH via pool admin', async () => {
+    const { configurator, helpersContract, weth } = testEnv;
+
+    const oldLiquidationProtocolFee = (
+      await getReserveData(helpersContract, weth.address)
+    )[4] as BigNumber;
+
+    const newFee = '1000';
+    expect(await configurator.setLiquidationProtocolFee(weth.address, newFee))
+      .to.emit(configurator, 'LiquidationProtocolFeeChanged')
+      .withArgs(weth.address, oldLiquidationProtocolFee, newFee);
+
+    expect((await getReserveData(helpersContract, weth.address))[4]).to.be.eq(newFee);
+  });
+
+  it('Updates the liquidation protocol fee of WETH via risk admin', async () => {
+    const { configurator, helpersContract, weth, riskAdmin } = testEnv;
+    const oldLiquidationProtocolFee = (
+      await getReserveData(helpersContract, weth.address)
+    )[4] as BigNumber;
+    const newFee = '2000';
+    expect(
+      await configurator
+        .connect(riskAdmin.signer)
+        .setLiquidationProtocolFee(weth.address, newFee)
+    )
+      .to.emit(configurator, 'LiquidationProtocolFeeChanged')
+      .withArgs(weth.address, oldLiquidationProtocolFee, newFee);
+    expect((await getReserveData(helpersContract, weth.address))[4]).to.be.eq(newFee);
   });
 
   it('Updates the ReserveInterestRateStrategy address of WETH via pool admin', async () => {
@@ -1099,3 +1130,5 @@ makeSuite('PoolConfigurator', (testEnv: TestEnv) => {
     expect(wethFlashLoanEnabled).to.be.equal(false);
   });
 });
+
+[end of test-suites/configurator.spec.ts]

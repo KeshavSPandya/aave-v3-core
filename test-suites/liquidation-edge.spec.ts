@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { BigNumber, utils } from 'ethers';
-import { MAX_UINT_AMOUNT } from '../helpers/constants';
+import { MAX_UINT_AMOUNT, ZERO_ADDRESS } from '../helpers/constants'; // Added ZERO_ADDRESS
 import { RateMode } from '../helpers/types';
 import { makeSuite, TestEnv } from './helpers/make-suite';
 import { convertToCurrencyDecimals } from '../helpers/contracts-helpers';
@@ -10,10 +10,12 @@ import {
   evmSnapshot,
   evmRevert,
   waitForTx,
-  AToken__factory,
+  KToken__factory, // Changed AToken__factory to KToken__factory
   StableDebtToken__factory,
   VariableDebtToken__factory,
-} from '@aave/deploy-v3';
+} from '@aave/deploy-v3'; // Assuming this path will be updated or KToken__factory will be available
+import { ProtocolErrors } from '../helpers/types'; // Added import for ProtocolErrors
+import { MockKTokenRepayment__factory } from '../types'; // Renamed MockATokenRepayment__factory
 
 makeSuite('Pool Liquidation: Edge cases', (testEnv: TestEnv) => {
   let snap: string;
@@ -26,9 +28,24 @@ makeSuite('Pool Liquidation: Edge cases', (testEnv: TestEnv) => {
   });
 
   before(async () => {
-    const { addressesProvider, oracle } = testEnv;
+    const { addressesProvider, oracle, configurator, dai, kDai, pool, deployer } = testEnv; // Added kDai, pool, deployer
 
     await waitForTx(await addressesProvider.setPriceOracle(oracle.address));
+
+    // Configure a mock repayment contract for kDai if liquidation involves it and handleRepayment is called
+    // This was in liquidation-ktoken.spec.ts, adding similar logic here if needed for kDai.
+    const kTokenRepayImpl = await new MockKTokenRepayment__factory(deployer.signer).deploy(
+      pool.address
+    );
+    await configurator.updateKToken({ // Changed updateAToken to updateKToken
+      asset: dai.address,
+      treasury: await kDai.RESERVE_TREASURY_ADDRESS(),
+      incentivesController: await kDai.getIncentivesController(),
+      name: await kDai.name(),
+      symbol: await kDai.symbol(),
+      implementation: kTokenRepayImpl.address,
+      params: '0x',
+    });
   });
 
   after(async () => {
@@ -93,6 +110,7 @@ makeSuite('Pool Liquidation: Edge cases', (testEnv: TestEnv) => {
 
     await oracle.setAssetPrice(dai.address, daiPrice.percentMul(600_00));
 
+    // receiveKToken is false (formerly receiveAToken)
     expect(
       await pool
         .connect(depositor.signer)
@@ -197,6 +215,7 @@ makeSuite('Pool Liquidation: Edge cases', (testEnv: TestEnv) => {
       (await pool.getUserConfiguration(borrower.address)).data
     );
 
+    // receiveKToken is false
     expect(
       await pool
         .connect(depositor.signer)
@@ -221,7 +240,7 @@ makeSuite('Pool Liquidation: Edge cases', (testEnv: TestEnv) => {
   });
 
   it('Liquidate the whole WETH collateral with 10% liquidation fee, asset should not be set as collateralized anymore', async () => {
-    const { pool, users, dai, usdc, weth, aWETH, oracle, configurator } = testEnv;
+    const { pool, users, dai, usdc, weth, kWETH, oracle, configurator } = testEnv; // Changed aWETH to kWETH
 
     await configurator.setLiquidationProtocolFee(weth.address, '1000'); // 10%
 
@@ -311,15 +330,16 @@ makeSuite('Pool Liquidation: Edge cases', (testEnv: TestEnv) => {
     // $USDC_debt = 1000 * 0.005 = 5
 
     const wethData = await pool.getReserveData(weth.address);
-    const aWETHToken = AToken__factory.connect(wethData.aTokenAddress, depositor.signer);
+    const kWETHToken = KToken__factory.connect(wethData.kTokenAddress, depositor.signer); // Changed aTokenAddress, AToken__factory
 
-    expect(await aWETHToken.balanceOf(borrower.address)).to.be.gt(0);
+    expect(await kWETHToken.balanceOf(borrower.address)).to.be.gt(0); // Changed aWETHToken to kWETHToken
 
     const userConfigBefore = BigNumber.from(
       (await pool.getUserConfiguration(borrower.address)).data
     );
 
     expect(await usdc.connect(depositor.signer).approve(pool.address, MAX_UINT_AMOUNT));
+    // receiveKToken is false
     expect(
       await pool
         .connect(depositor.signer)
@@ -336,7 +356,7 @@ makeSuite('Pool Liquidation: Edge cases', (testEnv: TestEnv) => {
         .and(1)
         .gt(0);
 
-    expect(await aWETHToken.balanceOf(borrower.address)).to.be.eq(0);
+    expect(await kWETHToken.balanceOf(borrower.address)).to.be.eq(0); // Changed aWETHToken to kWETHToken
 
     expect(isUsingAsCollateral(userConfigBefore, wethData.id)).to.be.true;
     expect(isUsingAsCollateral(userConfigAfter, wethData.id)).to.be.false;

@@ -6,7 +6,8 @@ import { convertToCurrencyDecimals } from '../helpers/contracts-helpers';
 import { makeSuite, TestEnv } from './helpers/make-suite';
 import './helpers/utils/wadraymath';
 import { parseUnits, formatUnits, parseEther } from '@ethersproject/units';
-import { evmSnapshot, evmRevert, VariableDebtToken__factory, aave } from '@aave/deploy-v3';
+import { evmSnapshot, evmRevert, VariableDebtToken__factory, aave } from '@aave/deploy-v3'; // Assuming 'aave' import is for the token, not a type if it conflicts
+import { KToken } from '../types'; // Import KToken
 
 makeSuite('EfficiencyMode', (testEnv: TestEnv) => {
   const {
@@ -45,7 +46,8 @@ makeSuite('EfficiencyMode', (testEnv: TestEnv) => {
       weth,
       users: [user0, user1, user2],
       aaveOracle,
-      aave,
+      // aave, // Assuming 'aave' here is the underlying token, not the KToken instance for AAVE token.
+             // If it's meant to be the kToken instance, it should be kAave from testEnv.
       oracle,
     } = testEnv;
     const mintAmount = utils.parseEther('10000');
@@ -167,11 +169,11 @@ makeSuite('EfficiencyMode', (testEnv: TestEnv) => {
     expect(await pool.getUserEMode(user0.address)).to.be.eq(userCategory);
   });
 
-  it('User 0 tries to sends aTokens to user 3 (revert expected)', async () => {
+  it('User 0 tries to sends kTokens to user 3 (revert expected)', async () => { // Changed aTokens to kTokens
     const {
       pool,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [user0, , , user3],
     } = testEnv;
 
@@ -179,7 +181,7 @@ makeSuite('EfficiencyMode', (testEnv: TestEnv) => {
     expect(await pool.getUserEMode(user3.address)).to.be.eq(0);
 
     await expect(
-      aDai
+      kDai // Changed aDai to kDai
         .connect(user0.signer)
         .transfer(user3.address, await convertToCurrencyDecimals(dai.address, '10'))
     ).to.be.revertedWith(HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD);
@@ -387,11 +389,11 @@ makeSuite('EfficiencyMode', (testEnv: TestEnv) => {
     ).to.be.revertedWith(INCONSISTENT_EMODE_CATEGORY);
   });
 
-  it('User 0 sends aTokens to user 3', async () => {
+  it('User 0 sends kTokens to user 3', async () => { // Changed aTokens to kTokens
     const {
       pool,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [user0, , , user3],
     } = testEnv;
 
@@ -400,40 +402,40 @@ makeSuite('EfficiencyMode', (testEnv: TestEnv) => {
 
     const transferAmount = await convertToCurrencyDecimals(dai.address, '10');
 
-    const balanceBeforeUser0 = await aDai.balanceOf(user0.address);
-    const balanceBeforeUser3 = await aDai.balanceOf(user3.address);
+    const balanceBeforeUser0 = await kDai.balanceOf(user0.address); // Changed aDai to kDai
+    const balanceBeforeUser3 = await kDai.balanceOf(user3.address); // Changed aDai to kDai
 
-    expect(await aDai.connect(user0.signer).transfer(user3.address, transferAmount));
+    expect(await kDai.connect(user0.signer).transfer(user3.address, transferAmount)); // Changed aDai to kDai
 
     expect(await pool.getUserEMode(user0.address)).to.be.eq(CATEGORIES.ETHEREUM.id);
     expect(await pool.getUserEMode(user3.address)).to.be.eq(0);
 
-    expect(await aDai.balanceOf(user0.address)).to.be.eq(balanceBeforeUser0.sub(transferAmount));
-    expect(await aDai.balanceOf(user3.address)).to.be.eq(balanceBeforeUser3.add(transferAmount));
+    expect(await kDai.balanceOf(user0.address)).to.be.eq(balanceBeforeUser0.sub(transferAmount)); // Changed aDai to kDai
+    expect(await kDai.balanceOf(user3.address)).to.be.eq(balanceBeforeUser3.add(transferAmount)); // Changed aDai to kDai
   });
 
-  it('User 0 sends aTokens to user 3', async () => {
+  it('User 0 sends kTokens to user 3', async () => { // Changed aTokens to kTokens
     const {
       pool,
       dai,
-      aDai,
+      kDai, // Changed aDai to kDai
       users: [user0, , , user3],
     } = testEnv;
 
     expect(await pool.getUserEMode(user0.address)).to.be.eq(CATEGORIES.ETHEREUM.id);
     expect(await pool.getUserEMode(user3.address)).to.be.eq(0);
 
-    const balanceBeforeUser0 = await aDai.balanceOf(user0.address);
-    const balanceBeforeUser3 = await aDai.balanceOf(user3.address);
+    const balanceBeforeUser0 = await kDai.balanceOf(user0.address); // Changed aDai to kDai
+    const balanceBeforeUser3 = await kDai.balanceOf(user3.address); // Changed aDai to kDai
 
     const transferAmount = await convertToCurrencyDecimals(dai.address, '10');
-    expect(await aDai.connect(user0.signer).transfer(user3.address, transferAmount));
+    expect(await kDai.connect(user0.signer).transfer(user3.address, transferAmount)); // Changed aDai to kDai
 
     expect(await pool.getUserEMode(user0.address)).to.be.eq(CATEGORIES.ETHEREUM.id);
     expect(await pool.getUserEMode(user3.address)).to.be.eq(0);
 
-    expect(await aDai.balanceOf(user0.address)).to.be.eq(balanceBeforeUser0.sub(transferAmount));
-    expect(await aDai.balanceOf(user3.address)).to.be.eq(balanceBeforeUser3.add(transferAmount));
+    expect(await kDai.balanceOf(user0.address)).to.be.eq(balanceBeforeUser0.sub(transferAmount)); // Changed aDai to kDai
+    expect(await kDai.balanceOf(user3.address)).to.be.eq(balanceBeforeUser3.add(transferAmount)); // Changed aDai to kDai
   });
 
   it('Credit delegation from EMode user, delegatee borrows non EMode asset (revert expected)', async () => {
